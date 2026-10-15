@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>ダッシュボード | 予算管理</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-speedometer2"></i> ダッシュボード</h2>
+        <div class="btn-group">
+            <a th:href="@{/(year=${prevYearMonth.year}, month=${prevYearMonth.monthValue})}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <span class="btn btn-outline-secondary btn-sm disabled"
+                  th:text="${year + '年' + month + '月'}">2026年10月</span>
+            <a th:href="@{/(year=${nextYearMonth.year}, month=${nextYearMonth.monthValue})}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card stat-income h-100">
+                <div class="card-body">
+                    <div class="text-muted small">収入</div>
+                    <div class="fs-3 fw-bold text-success"
+                         th:text="'¥' + ${#numbers.formatDecimal(income, 1, 'COMMA', 0, 'POINT')}">¥0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card stat-expense h-100">
+                <div class="card-body">
+                    <div class="text-muted small">支出</div>
+                    <div class="fs-3 fw-bold text-danger"
+                         th:text="'¥' + ${#numbers.formatDecimal(expense, 1, 'COMMA', 0, 'POINT')}">¥0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card stat-balance h-100">
+                <div class="card-body">
+                    <div class="text-muted small">収支</div>
+                    <div class="fs-3 fw-bold"
+                         th:classappend="${balance.compareTo(T(java.math.BigDecimal).ZERO) >= 0} ? 'text-primary' : 'text-danger'"
+                         th:text="'¥' + ${#numbers.formatDecimal(balance, 1, 'COMMA', 0, 'POINT')}">¥0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Budgets Progress -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-pie-chart"></i> 予算達成状況
+                </div>
+                <div class="card-body">
+                    <div th:if="${#lists.isEmpty(budgets)}" class="text-muted text-center py-4">
+                        この月の予算はまだ設定されていません。<br>
+                        <a href="/budgets">予算を設定する</a>
+                    </div>
+                    <div th:each="b : ${budgets}" class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span th:text="${b.categoryName}">食費</span>
+                            <span>
+                                <span th:text="'¥' + ${#numbers.formatDecimal(b.spent, 1, 'COMMA', 0, 'POINT')}">0</span>
+                                /
+                                <span th:text="'¥' + ${#numbers.formatDecimal(b.amount, 1, 'COMMA', 0, 'POINT')}">0</span>
+                            </span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar"
+                                 th:classappend="${b.spent.compareTo(b.amount) > 0} ? 'bg-danger' : 'bg-success'"
+                                 th:style="'width:' + ${b.amount.compareTo(T(java.math.BigDecimal).ZERO) == 0 ? 0 : (b.spent.doubleValue() / b.amount.doubleValue() * 100)} + '%'"
+                                 role="progressbar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense by Category -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-bar-chart"></i> カテゴリ別支出
+                </div>
+                <div class="card-body">
+                    <div th:if="${#lists.isEmpty(expenseByCategory)}" class="text-muted text-center py-4">
+                        この月の支出データがありません
+                    </div>
+                    <table class="table table-sm" th:if="${!#lists.isEmpty(expenseByCategory)}">
+                        <thead>
+                        <tr>
+                            <th>カテゴリ</th>
+                            <th class="text-end">金額</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="row : ${expenseByCategory}">
+                            <td th:text="${row.category}">食費</td>
+                            <td class="text-end"
+                                th:text="'¥' + ${#numbers.formatDecimal(row.total, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="card mt-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <span class="fw-semibold"><i class="bi bi-list-ul"></i> 今月の取引</span>
+            <a href="/transactions" class="btn btn-sm btn-outline-primary">すべて見る</a>
+        </div>
+        <div class="card-body p-0">
+            <div th:if="${#lists.isEmpty(transactions)}" class="text-muted text-center py-4">
+                取引がありません
+            </div>
+            <table class="table table-hover mb-0" th:if="${!#lists.isEmpty(transactions)}">
+                <thead>
+                <tr>
+                    <th>日付</th>
+                    <th>カテゴリ</th>
+                    <th>内容</th>
+                    <th class="text-end">金額</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${transactions}">
+                    <td th:text="${t.transactionDate}">2026-10-01</td>
+                    <td th:text="${t.categoryName}">食費</td>
+                    <td th:text="${t.description}">-</td>
+                    <td class="text-end"
+                        th:classappend="${t.type == 'INCOME'} ? 'text-success' : 'text-danger'"
+                        th:text="${(t.type == 'INCOME' ? '+' : '-') + '¥' + #numbers.formatDecimal(t.amount, 1, 'COMMA', 0, 'POINT')}">
+                        -¥1,000
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

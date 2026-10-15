@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>予算 | 予算管理</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-piggy-bank"></i> 予算管理</h2>
+        <div class="btn-group">
+            <a th:href="@{/budgets(year=${prevYearMonth.year}, month=${prevYearMonth.monthValue})}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <span class="btn btn-outline-secondary btn-sm disabled"
+                  th:text="${year + '年' + month + '月'}">2026年10月</span>
+            <a th:href="@{/budgets(year=${nextYearMonth.year}, month=${nextYearMonth.monthValue})}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-white fw-semibold">予算を設定</div>
+                <div class="card-body">
+                    <form th:action="@{/budgets}" method="post">
+                        <input type="hidden" name="year" th:value="${year}">
+                        <input type="hidden" name="month" th:value="${month}">
+                        <div class="mb-3">
+                            <label class="form-label">カテゴリ（支出）</label>
+                            <select class="form-select" name="categoryId" required>
+                                <option value="">選択してください</option>
+                                <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}">食費</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">予算額</label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input type="number" class="form-control" name="amount"
+                                       min="0" step="1" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">設定</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-white fw-semibold">今月の予算</div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(budgets)}" class="text-muted text-center py-4">
+                        予算が設定されていません
+                    </div>
+                    <table class="table table-hover mb-0" th:if="${!#lists.isEmpty(budgets)}">
+                        <thead>
+                        <tr>
+                            <th>カテゴリ</th>
+                            <th class="text-end">予算</th>
+                            <th class="text-end">使用額</th>
+                            <th class="text-end">残額</th>
+                            <th style="width:30%">進捗</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="b : ${budgets}">
+                            <td th:text="${b.categoryName}">食費</td>
+                            <td class="text-end"
+                                th:text="'¥' + ${#numbers.formatDecimal(b.amount, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                            <td class="text-end"
+                                th:text="'¥' + ${#numbers.formatDecimal(b.spent, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                            <td class="text-end"
+                                th:classappend="${b.amount.subtract(b.spent).compareTo(T(java.math.BigDecimal).ZERO) < 0} ? 'text-danger' : 'text-success'"
+                                th:text="'¥' + ${#numbers.formatDecimal(b.amount.subtract(b.spent), 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar"
+                                         th:classappend="${b.spent.compareTo(b.amount) > 0} ? 'bg-danger' : 'bg-success'"
+                                         th:style="'width:' + ${b.amount.compareTo(T(java.math.BigDecimal).ZERO) == 0 ? 0 : (b.spent.doubleValue() / b.amount.doubleValue() * 100)} + '%'"
+                                         role="progressbar"></div>
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <form th:action="@{/budgets/{id}/delete(id=${b.id})}" method="post"
+                                      class="d-inline" onsubmit="return confirm('削除しますか？');">
+                                    <input type="hidden" name="year" th:value="${year}">
+                                    <input type="hidden" name="month" th:value="${month}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

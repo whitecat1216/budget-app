@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>取引 | 予算管理</title>
+</head>
+<body>
+<div th:fragment="content">
+    <h2 class="mb-4"><i class="bi bi-receipt"></i> 取引管理</h2>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-white fw-semibold">新規取引</div>
+                <div class="card-body">
+                    <form th:action="@{/transactions}" method="post" th:object="${transaction}">
+                        <div class="mb-3">
+                            <label class="form-label">種類</label>
+                            <select class="form-select" th:field="*{type}" required id="typeSelect">
+                                <option value="EXPENSE">支出</option>
+                                <option value="INCOME">収入</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">カテゴリ</label>
+                            <select class="form-select" th:field="*{categoryId}" required>
+                                <option value="">選択してください</option>
+                                <option th:each="c : ${categories}"
+                                        th:value="${c.id}"
+                                        th:text="${c.name + ' (' + (c.type == 'INCOME' ? '収入' : '支出') + ')'}"
+                                        th:data-type="${c.type}">食費</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">金額</label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input type="number" class="form-control" th:field="*{amount}"
+                                       min="1" step="1" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">日付</label>
+                            <input type="date" class="form-control" th:field="*{transactionDate}"
+                                   th:value="${today}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">内容・メモ</label>
+                            <input type="text" class="form-control" th:field="*{description}">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">追加</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-white fw-semibold">取引一覧</div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(transactions)}" class="text-muted text-center py-4">
+                        取引がありません
+                    </div>
+                    <table class="table table-hover mb-0" th:if="${!#lists.isEmpty(transactions)}">
+                        <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>カテゴリ</th>
+                            <th>内容</th>
+                            <th class="text-end">金額</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="t : ${transactions}">
+                            <td th:text="${t.transactionDate}">2026-10-01</td>
+                            <td th:text="${t.categoryName}">食費</td>
+                            <td th:text="${t.description}">-</td>
+                            <td class="text-end"
+                                th:classappend="${t.type == 'INCOME'} ? 'text-success' : 'text-danger'"
+                                th:text="${(t.type == 'INCOME' ? '+' : '-') + '¥' + #numbers.formatDecimal(t.amount, 1, 'COMMA', 0, 'POINT')}">
+                                -¥1,000
+                            </td>
+                            <td class="text-end">
+                                <form th:action="@{/transactions/{id}/delete(id=${t.id})}" method="post"
+                                      class="d-inline" onsubmit="return confirm('削除しますか？');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

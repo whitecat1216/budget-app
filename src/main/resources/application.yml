@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: budget-app
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:budgetdb}
+    username: ${DB_USER:budgetuser}
+    password: ${DB_PASSWORD:budgetpass}
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.budget.model
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.example.budget: DEBUG
+    org.mybatis: DEBUG

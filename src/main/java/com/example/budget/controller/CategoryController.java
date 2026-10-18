@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Controller
 @RequestMapping("/categories")
@@ -17,12 +18,14 @@ public class CategoryController {
 
     @GetMapping
     public String list(Model model) {
+        model.addAttribute("activeNav", "categories");
         model.addAttribute("categories", categoryService.findAll());
         model.addAttribute("category", new Category());
         return "categories";
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN')")
     public String create(@ModelAttribute Category category, RedirectAttributes ra) {
         if (category.getColor() == null || category.getColor().isBlank()) {
             category.setColor("#6c757d");
@@ -33,6 +36,7 @@ public class CategoryController {
     }
 
     @PostMapping("/{id}/update")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN')")
     public String update(@PathVariable Long id, @ModelAttribute Category category, RedirectAttributes ra) {
         category.setId(id);
         categoryService.update(category);
@@ -41,6 +45,7 @@ public class CategoryController {
     }
 
     @PostMapping("/{id}/delete")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN')")
     public String delete(@PathVariable Long id, RedirectAttributes ra) {
         categoryService.delete(id);
         ra.addFlashAttribute("message", "カテゴリを削除しました");

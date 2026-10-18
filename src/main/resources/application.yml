@@ -26,6 +26,15 @@ mybatis:
 
 server:
   port: 8080
+  forward-headers-strategy: framework
+
+app:
+  public-url: ${APP_PUBLIC_URL:http://localhost:8080}
+  mail:
+    from: ${APP_MAIL_FROM:no-reply@localhost}
+  bootstrap-admin:
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
 
 logging:
   level:

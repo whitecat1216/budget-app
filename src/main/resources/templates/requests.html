@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head><title>申請・承認 | NEXUS</title></head><body><div th:fragment="content">
+    <div class="mb-4"><h1 class="page-heading mb-0">申請・承認</h1><p class="page-subtitle mb-0">支出申請の提出、確認、承認状況を管理します。</p></div>
+    <div class="row g-3">
+        <div class="col-xl-4"><section class="card"><div class="card-header bg-white"><div class="fw-semibold">支出を申請</div><div class="small text-muted mt-1">入力内容を下書き保存してから提出します。</div></div><div class="card-body">
+            <div th:if="${formErrors}" class="alert alert-danger">入力内容を確認してください。</div>
+            <form th:action="@{/requests}" method="post" th:object="${request}">
+                <div class="mb-3"><label class="form-label" for="requestTitle">件名</label><input id="requestTitle" class="form-control" th:field="*{title}" maxlength="160" required></div>
+                <div class="mb-3"><label class="form-label" for="requestPurpose">目的・内容</label><textarea id="requestPurpose" class="form-control" th:field="*{purpose}" rows="3" maxlength="1000" required></textarea></div>
+                <div class="mb-3"><label class="form-label" for="requestAmount">申請金額</label><div class="input-group"><span class="input-group-text">¥</span><input id="requestAmount" type="number" class="form-control" th:field="*{amount}" min="1" step="1" required></div></div>
+                <div class="mb-3"><label class="form-label" for="requestDate">希望日</label><input id="requestDate" type="date" class="form-control" th:field="*{requestedDate}" th:value="${today}" required></div>
+                <div class="mb-3"><label class="form-label" for="requestCategory">勘定カテゴリ</label><select id="requestCategory" class="form-select" th:field="*{categoryId}"><option value="">未設定</option><option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}">交通費</option></select></div>
+                <div class="mb-3"><label class="form-label" for="requestDepartment">部門</label><select id="requestDepartment" class="form-select" th:field="*{departmentId}"><option value="">未設定</option><option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}">営業部</option></select></div>
+                <div class="mb-3"><label class="form-label" for="requestProject">プロジェクト</label><select id="requestProject" class="form-select" th:field="*{projectId}"><option value="">未設定</option><option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.name}">新商品販促</option></select></div>
+                <button class="btn btn-primary w-100" type="submit">下書き保存</button>
+            </form>
+        </div></section></div>
+        <div class="col-xl-8"><section class="card"><div class="card-header bg-white"><div class="fw-semibold">申請一覧</div><div class="small text-muted mt-1">申請者は自分の申請、承認者は企業内の申請を確認できます。</div></div>
+            <div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>件名 / 申請者</th><th>部門・プロジェクト</th><th class="text-end">金額</th><th>状態</th><th>操作</th></tr></thead><tbody>
+                <tr th:each="r : ${requests}"><td><div class="fw-semibold" th:text="${r.title}">出張交通費</div><div class="small text-muted" th:text="${r.requesterName + ' · ' + r.requestedDate}">申請者</div><div class="small text-muted" th:text="${r.purpose}">目的</div></td>
+                    <td><div th:text="${r.departmentName == null ? '—' : r.departmentName}">部門</div><div class="small text-muted" th:text="${r.projectName == null ? '—' : r.projectName}">PJ</div></td>
+                    <td class="text-end text-nowrap" th:text="'¥' + ${#numbers.formatDecimal(r.amount, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                    <td><span class="badge" th:classappend="${r.status == 'APPROVED' ? 'text-bg-success' : (r.status == 'REJECTED' ? 'text-bg-danger' : (r.status == 'SUBMITTED' ? 'text-bg-primary' : 'text-bg-secondary'))}" th:text="${r.status}">DRAFT</span></td>
+                    <td class="text-nowrap"><form th:if="${r.status == 'DRAFT' || r.status == 'RETURNED'}" th:action="@{/requests/{id}/submit(id=${r.id})}" method="post"><button class="btn btn-sm btn-outline-primary" type="submit">提出</button></form>
+                        <form th:if="${canReview && r.status == 'SUBMITTED'}" th:action="@{/requests/{id}/review(id=${r.id})}" method="post" class="d-flex flex-wrap gap-1"><input type="text" class="form-control form-control-sm" name="comment" placeholder="コメント"><button class="btn btn-sm btn-success" name="action" value="APPROVED">承認</button><button class="btn btn-sm btn-outline-secondary" name="action" value="RETURNED">差戻し</button><button class="btn btn-sm btn-outline-danger" name="action" value="REJECTED">却下</button></form>
+                    </td></tr>
+                <tr th:if="${#lists.isEmpty(requests)}"><td colspan="5" class="text-center text-muted py-5">申請はありません。</td></tr>
+            </tbody></table></div>
+        </section></div>
+    </div>
+</div></body></html>

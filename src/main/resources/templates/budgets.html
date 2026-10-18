@@ -6,8 +6,11 @@
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0"><i class="bi bi-piggy-bank"></i> 予算管理</h2>
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+            <h1 class="page-heading mb-0">予算管理</h1>
+            <p class="page-subtitle mb-0">カテゴリごとの月次予算と支出状況を管理します。</p>
+        </div>
         <div class="btn-group">
             <a th:href="@{/budgets(year=${prevYearMonth.year}, month=${prevYearMonth.monthValue})}"
                class="btn btn-outline-secondary btn-sm">
@@ -25,7 +28,10 @@
     <div class="row g-4">
         <div class="col-lg-4">
             <div class="card">
-                <div class="card-header bg-white fw-semibold">予算を設定</div>
+                <div class="card-header bg-white">
+                    <div class="fw-semibold">予算を設定</div>
+                    <div class="small text-muted mt-1" th:text="${year + '年' + month + '月の予算を登録'}">対象月の予算を登録</div>
+                </div>
                 <div class="card-body">
                     <form th:action="@{/budgets}" method="post">
                         <input type="hidden" name="year" th:value="${year}">
@@ -35,6 +41,20 @@
                             <select class="form-select" name="categoryId" required>
                                 <option value="">選択してください</option>
                                 <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}">食費</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="budgetDepartment">部門</label>
+                            <select class="form-select" id="budgetDepartment" name="departmentId">
+                                <option value="">部門共通</option>
+                                <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}">営業部</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="budgetProject">プロジェクト</label>
+                            <select class="form-select" id="budgetProject" name="projectId">
+                                <option value="">プロジェクトなし</option>
+                                <option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.name}">新商品販促</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -53,14 +73,19 @@
 
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header bg-white fw-semibold">今月の予算</div>
+                <div class="card-header bg-white">
+                    <div class="fw-semibold">予算一覧</div>
+                    <div class="small text-muted mt-1">設定額、使用額、残額を確認できます。</div>
+                </div>
                 <div class="card-body p-0">
-                    <div th:if="${#lists.isEmpty(budgets)}" class="text-muted text-center py-4">
-                        予算が設定されていません
+                    <div th:if="${#lists.isEmpty(budgets)}" class="empty-state">
+                        <i class="bi bi-wallet2"></i>
+                        <div>この月の予算はまだ設定されていません。</div>
                     </div>
                     <table class="table table-hover mb-0" th:if="${!#lists.isEmpty(budgets)}">
                         <thead>
                         <tr>
+                            <th>部門 / プロジェクト</th>
                             <th>カテゴリ</th>
                             <th class="text-end">予算</th>
                             <th class="text-end">使用額</th>
@@ -71,7 +96,8 @@
                         </thead>
                         <tbody>
                         <tr th:each="b : ${budgets}">
-                            <td th:text="${b.categoryName}">食費</td>
+                            <td><div th:text="${b.departmentName == null ? '全社共通' : b.departmentName}">全社共通</div><div class="small text-muted" th:text="${b.projectName == null ? '—' : b.projectName}">—</div></td>
+                            <td class="fw-semibold" th:text="${b.categoryName}">食費</td>
                             <td class="text-end"
                                 th:text="'¥' + ${#numbers.formatDecimal(b.amount, 1, 'COMMA', 0, 'POINT')}">¥0</td>
                             <td class="text-end"
@@ -83,8 +109,8 @@
                                 <div class="progress">
                                     <div class="progress-bar"
                                          th:classappend="${b.spent.compareTo(b.amount) > 0} ? 'bg-danger' : 'bg-success'"
-                                         th:style="'width:' + ${b.amount.compareTo(T(java.math.BigDecimal).ZERO) == 0 ? 0 : (b.spent.doubleValue() / b.amount.doubleValue() * 100)} + '%'"
-                                         role="progressbar"></div>
+                                         th:style="'width:' + ${b.amount.compareTo(T(java.math.BigDecimal).ZERO) == 0 ? 0 : T(java.lang.Math).min(100, b.spent.doubleValue() / b.amount.doubleValue() * 100)} + '%'"
+                                         role="progressbar" th:aria-valuenow="${b.amount.compareTo(T(java.math.BigDecimal).ZERO) == 0 ? 0 : T(java.lang.Math).min(100, b.spent.doubleValue() / b.amount.doubleValue() * 100)}" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                             </td>
                             <td class="text-end">

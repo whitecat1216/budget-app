@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head><title>ユーザー・権限 | NEXUS</title></head><body><div th:fragment="content">
+    <div class="mb-4"><h1 class="page-heading mb-0">ユーザー・権限</h1><p class="page-subtitle mb-0">企業メンバーを招待し、業務ロールを割り当てます。</p></div>
+    <div class="row g-3"><div class="col-xl-4"><section class="card"><div class="card-header bg-white"><div class="fw-semibold">メンバーを招待</div><div class="small text-muted mt-1">招待リンクから本人がパスワードを設定します。</div></div><div class="card-body">
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+        <form th:action="@{/team/invite}" method="post" th:object="${invite}">
+            <div class="mb-3"><label class="form-label" for="inviteEmail">メールアドレス</label><input id="inviteEmail" class="form-control" type="email" th:field="*{email}" required></div>
+            <div class="mb-3"><label class="form-label" for="inviteName">氏名</label><input id="inviteName" class="form-control" th:field="*{displayName}" required></div>
+            <div class="mb-4"><label class="form-label" for="inviteRole">ロール</label><select id="inviteRole" class="form-select" th:field="*{role}"><option value="MEMBER">申請者</option><option value="APPROVER">承認者</option><option value="DEPARTMENT_MANAGER">部門責任者</option><option value="PROJECT_MANAGER">プロジェクト責任者</option><option value="FINANCE_ADMIN">財務管理者</option><option value="EXECUTIVE">経営層（閲覧）</option><option value="AUDITOR">監査担当</option></select></div>
+            <button class="btn btn-primary w-100" type="submit">招待メールを送信</button>
+        </form>
+    </div></section></div>
+    <div class="col-xl-8"><section class="card"><div class="card-header bg-white"><div class="fw-semibold">企業メンバー</div><div class="small text-muted mt-1">ロールの変更は現在管理者による再招待で行います。</div></div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>氏名</th><th>メールアドレス</th><th>ロール</th><th>状態</th></tr></thead><tbody>
+        <tr th:each="u : ${users}"><td class="fw-semibold" th:text="${u.display_name}">利用者</td><td th:text="${u.email}">user@example.com</td><td th:text="${u.role}">MEMBER</td><td><span class="badge" th:classappend="${u.enabled ? 'text-bg-success' : 'text-bg-secondary'}" th:text="${u.enabled ? '有効' : '招待中'}">有効</span></td></tr>
+        <tr th:if="${#lists.isEmpty(users)}"><td colspan="4" class="text-center text-muted py-5">ユーザーはありません。</td></tr>
+    </tbody></table></div></section></div></div>
+</div></body></html>

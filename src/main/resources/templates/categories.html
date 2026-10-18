@@ -6,12 +6,18 @@
 </head>
 <body>
 <div th:fragment="content">
-    <h2 class="mb-4"><i class="bi bi-tags"></i> カテゴリ管理</h2>
+    <div class="mb-4">
+        <h1 class="page-heading mb-0">カテゴリ管理</h1>
+        <p class="page-subtitle mb-0">取引と予算に使うカテゴリを設定します。</p>
+    </div>
 
     <div class="row g-4">
         <div class="col-lg-4">
             <div class="card">
-                <div class="card-header bg-white fw-semibold">新規カテゴリ</div>
+                <div class="card-header bg-white">
+                    <div class="fw-semibold">カテゴリを追加</div>
+                    <div class="small text-muted mt-1">収入または支出の分類を作成します。</div>
+                </div>
                 <div class="card-body">
                     <form th:action="@{/categories}" method="post" th:object="${category}">
                         <div class="mb-3">
@@ -37,7 +43,10 @@
 
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header bg-white fw-semibold">カテゴリ一覧</div>
+                <div class="card-header bg-white">
+                    <div class="fw-semibold">カテゴリ一覧</div>
+                    <div class="small text-muted mt-1">現在登録されている分類</div>
+                </div>
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0">
                         <thead>

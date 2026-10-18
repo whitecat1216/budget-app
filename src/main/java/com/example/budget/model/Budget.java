@@ -8,8 +8,13 @@ import java.time.YearMonth;
 @Data
 public class Budget {
     private Long id;
+    private Long tenantId;
     private Long categoryId;
     private String categoryName; // joined
+    private Long departmentId;
+    private String departmentName;
+    private Long projectId;
+    private String projectName;
     private Integer year;
     private Integer month;
     private BigDecimal amount; // planned amount

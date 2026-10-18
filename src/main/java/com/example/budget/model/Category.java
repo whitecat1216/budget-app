@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 @Data
 public class Category {
     private Long id;
+    private Long tenantId;
     private String name;
     private String type; // INCOME or EXPENSE
     private String color; // hex color for UI

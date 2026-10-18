@@ -6,12 +6,18 @@
 </head>
 <body>
 <div th:fragment="content">
-    <h2 class="mb-4"><i class="bi bi-receipt"></i> 取引管理</h2>
+    <div class="mb-4">
+        <h1 class="page-heading mb-0">取引</h1>
+        <p class="page-subtitle mb-0">収入と支出を登録し、取引履歴を確認できます。</p>
+    </div>
 
     <div class="row g-4">
         <div class="col-lg-4">
             <div class="card">
-                <div class="card-header bg-white fw-semibold">新規取引</div>
+                <div class="card-header bg-white">
+                    <div class="fw-semibold">取引を登録</div>
+                    <div class="small text-muted mt-1">金額とカテゴリを入力してください。</div>
+                </div>
                 <div class="card-body">
                     <form th:action="@{/transactions}" method="post" th:object="${transaction}">
                         <div class="mb-3">
@@ -29,6 +35,20 @@
                                         th:value="${c.id}"
                                         th:text="${c.name + ' (' + (c.type == 'INCOME' ? '収入' : '支出') + ')'}"
                                         th:data-type="${c.type}">食費</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="transactionDepartment">部門</label>
+                            <select class="form-select" id="transactionDepartment" th:field="*{departmentId}">
+                                <option value="">未設定</option>
+                                <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}">営業部</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="transactionProject">プロジェクト</label>
+                            <select class="form-select" id="transactionProject" th:field="*{projectId}">
+                                <option value="">未設定</option>
+                                <option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.name}">新商品販促</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -56,16 +76,21 @@
 
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header bg-white fw-semibold">取引一覧</div>
+                <div class="card-header bg-white">
+                    <div class="fw-semibold">取引一覧</div>
+                    <div class="small text-muted mt-1">登録済みの収入・支出</div>
+                </div>
                 <div class="card-body p-0">
-                    <div th:if="${#lists.isEmpty(transactions)}" class="text-muted text-center py-4">
-                        取引がありません
+                    <div th:if="${#lists.isEmpty(transactions)}" class="empty-state">
+                        <i class="bi bi-receipt"></i>
+                        <div>取引がありません</div>
                     </div>
                     <table class="table table-hover mb-0" th:if="${!#lists.isEmpty(transactions)}">
                         <thead>
                         <tr>
                             <th>日付</th>
                             <th>カテゴリ</th>
+                            <th>部門 / プロジェクト</th>
                             <th>内容</th>
                             <th class="text-end">金額</th>
                             <th></th>
@@ -75,7 +100,8 @@
                         <tr th:each="t : ${transactions}">
                             <td th:text="${t.transactionDate}">2026-10-01</td>
                             <td th:text="${t.categoryName}">食費</td>
-                            <td th:text="${t.description}">-</td>
+                            <td><div th:text="${t.departmentName == null ? '—' : t.departmentName}">—</div><div class="small text-muted" th:text="${t.projectName == null ? '—' : t.projectName}">—</div></td>
+                            <td th:text="${t.description != null && !t.description.isBlank() ? t.description : '—'}">—</td>
                             <td class="text-end"
                                 th:classappend="${t.type == 'INCOME'} ? 'text-success' : 'text-danger'"
                                 th:text="${(t.type == 'INCOME' ? '+' : '-') + '¥' + #numbers.formatDecimal(t.amount, 1, 'COMMA', 0, 'POINT')}">

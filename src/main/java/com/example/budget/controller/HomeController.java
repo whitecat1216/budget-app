@@ -11,8 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.List;
-import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -39,16 +37,42 @@ public class HomeController {
         BigDecimal expense = transactionService.getTotalExpense(start, end);
         BigDecimal balance = income.subtract(expense);
 
-        List<Map<String, Object>> expenseByCategory = transactionService.getExpenseSummaryByCategory(start, end);
         var budgets = budgetService.findByYearMonth(y, m);
         var recentTransactions = transactionService.findByMonth(y, m);
+        BigDecimal totalBudget = budgets.stream()
+                .map(budget -> budget.getAmount() != null ? budget.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal budgetUsageRate = totalBudget.signum() == 0
+                ? BigDecimal.ZERO
+                : expense.multiply(BigDecimal.valueOf(100))
+                    .divide(totalBudget, 1, java.math.RoundingMode.HALF_UP);
+        double budgetProgressWidth = budgetUsageRate.max(BigDecimal.ZERO)
+                .min(BigDecimal.valueOf(100)).doubleValue();
+
+        var categoryExpenses = transactionService.getExpenseSummaryByCategoryIncludingEmpty(start, end);
+        BigDecimal maxCategoryExpense = categoryExpenses.stream()
+                .map(row -> row.getActual() != null ? row.getActual() : BigDecimal.ZERO)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+        categoryExpenses.forEach(row -> {
+            BigDecimal amount = row.getActual() != null ? row.getActual() : BigDecimal.ZERO;
+            row.setProgressWidth(maxCategoryExpense.signum() == 0
+                    ? 0
+                    : amount.multiply(BigDecimal.valueOf(100))
+                        .divide(maxCategoryExpense, 1, java.math.RoundingMode.HALF_UP).doubleValue());
+        });
 
         model.addAttribute("year", y);
         model.addAttribute("month", m);
+        model.addAttribute("activeNav", "dashboard");
         model.addAttribute("income", income);
         model.addAttribute("expense", expense);
         model.addAttribute("balance", balance);
-        model.addAttribute("expenseByCategory", expenseByCategory);
+        model.addAttribute("categoryExpenses", categoryExpenses);
+        model.addAttribute("totalBudget", totalBudget);
+        model.addAttribute("budgetUsageRate", budgetUsageRate);
+        model.addAttribute("budgetProgressWidth", budgetProgressWidth);
+        model.addAttribute("budgetExceeded", budgetUsageRate.compareTo(BigDecimal.valueOf(100)) >= 0);
         model.addAttribute("budgets", budgets);
         model.addAttribute("transactions", recentTransactions);
         model.addAttribute("prevYearMonth", ym.minusMonths(1));

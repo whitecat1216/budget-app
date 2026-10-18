@@ -8,38 +8,50 @@ import java.util.List;
 @Mapper
 public interface BudgetMapper {
 
-    @Select("SELECT b.*, c.name as category_name FROM budgets b " +
-            "LEFT JOIN categories c ON b.category_id = c.id " +
-            "ORDER BY b.year DESC, b.month DESC, c.name")
-    List<Budget> findAll();
+    @Select("SELECT b.*, c.name as category_name, d.name as department_name, p.name as project_name FROM budgets b " +
+            "LEFT JOIN categories c ON b.category_id = c.id LEFT JOIN departments d ON b.department_id = d.id LEFT JOIN projects p ON b.project_id = p.id " +
+            "WHERE b.tenant_id = #{tenantId} ORDER BY b.year DESC, b.month DESC, c.name")
+    List<Budget> findAll(@Param("tenantId") long tenantId);
 
-    @Select("SELECT b.*, c.name as category_name FROM budgets b " +
-            "LEFT JOIN categories c ON b.category_id = c.id " +
-            "WHERE b.id = #{id}")
-    Budget findById(Long id);
+    @Select("SELECT b.*, c.name as category_name, d.name as department_name, p.name as project_name FROM budgets b " +
+            "LEFT JOIN categories c ON b.category_id = c.id LEFT JOIN departments d ON b.department_id = d.id LEFT JOIN projects p ON b.project_id = p.id " +
+            "WHERE b.id = #{id} AND b.tenant_id = #{tenantId}")
+    Budget findById(@Param("id") Long id, @Param("tenantId") long tenantId);
 
-    @Select("SELECT b.*, c.name as category_name FROM budgets b " +
-            "LEFT JOIN categories c ON b.category_id = c.id " +
-            "WHERE b.year = #{year} AND b.month = #{month} " +
+    @Select("SELECT b.*, c.name as category_name, d.name as department_name, p.name as project_name FROM budgets b " +
+            "LEFT JOIN categories c ON b.category_id = c.id LEFT JOIN departments d ON b.department_id = d.id LEFT JOIN projects p ON b.project_id = p.id " +
+            "WHERE b.year = #{year} AND b.month = #{month} AND b.tenant_id = #{tenantId} " +
             "ORDER BY c.name")
-    List<Budget> findByYearMonth(@Param("year") int year, @Param("month") int month);
+    List<Budget> findByYearMonth(@Param("year") int year, @Param("month") int month, @Param("tenantId") long tenantId);
 
-    @Select("SELECT b.*, c.name as category_name FROM budgets b " +
+    @Select("SELECT b.*, c.name as category_name, d.name as department_name, p.name as project_name FROM budgets b " +
+            "LEFT JOIN categories c ON b.category_id = c.id LEFT JOIN departments d ON b.department_id = d.id LEFT JOIN projects p ON b.project_id = p.id " +
+            "WHERE b.year = #{year} AND b.month = #{month} AND b.tenant_id = #{tenantId} " +
+            "AND (#{departmentId} IS NULL OR b.department_id = #{departmentId}) " +
+            "AND (#{projectId} IS NULL OR b.project_id = #{projectId}) ORDER BY c.name")
+    List<Budget> findByYearMonthAndScope(@Param("year") int year, @Param("month") int month,
+                                         @Param("departmentId") Long departmentId,
+                                         @Param("projectId") Long projectId,
+                                         @Param("tenantId") long tenantId);
+
+    @Select("SELECT b.*, c.name as category_name, d.name as department_name, p.name as project_name FROM budgets b " +
             "LEFT JOIN categories c ON b.category_id = c.id " +
-            "WHERE b.category_id = #{categoryId} AND b.year = #{year} AND b.month = #{month}")
+            "LEFT JOIN departments d ON b.department_id = d.id LEFT JOIN projects p ON b.project_id = p.id " +
+            "WHERE b.category_id = #{categoryId} AND b.year = #{year} AND b.month = #{month} AND b.tenant_id = #{tenantId}")
     Budget findByCategoryAndYearMonth(@Param("categoryId") Long categoryId,
                                       @Param("year") int year,
-                                      @Param("month") int month);
+                                      @Param("month") int month,
+                                      @Param("tenantId") long tenantId);
 
-    @Insert("INSERT INTO budgets (category_id, year, month, amount, created_at, updated_at) " +
-            "VALUES (#{categoryId}, #{year}, #{month}, #{amount}, NOW(), NOW())")
+    @Insert("INSERT INTO budgets (tenant_id, category_id, department_id, project_id, year, month, amount, created_at, updated_at) " +
+            "VALUES (#{tenantId}, #{categoryId}, #{departmentId}, #{projectId}, #{year}, #{month}, #{amount}, NOW(), NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Budget budget);
 
-    @Update("UPDATE budgets SET category_id = #{categoryId}, year = #{year}, month = #{month}, " +
-            "amount = #{amount}, updated_at = NOW() WHERE id = #{id}")
+    @Update("UPDATE budgets SET category_id = #{categoryId}, department_id = #{departmentId}, project_id = #{projectId}, year = #{year}, month = #{month}, " +
+            "amount = #{amount}, updated_at = NOW() WHERE id = #{id} AND tenant_id = #{tenantId}")
     int update(Budget budget);
 
-    @Delete("DELETE FROM budgets WHERE id = #{id}")
-    int delete(Long id);
+    @Delete("DELETE FROM budgets WHERE id = #{id} AND tenant_id = #{tenantId}")
+    int delete(@Param("id") Long id, @Param("tenantId") long tenantId);
 }

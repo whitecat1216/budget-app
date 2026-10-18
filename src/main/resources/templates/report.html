@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>予実レポート | 予算管理</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+            <h1 class="page-heading mb-0">予算実績レポート</h1>
+            <p class="page-subtitle mb-0">カテゴリ別の予算、支出実績、残額を比較します。</p>
+        </div>
+        <div class="btn-group" aria-label="表示月">
+            <a th:href="@{/reports/budget-vs-actual(year=${prevYearMonth.year}, month=${prevYearMonth.monthValue})}"
+               class="btn btn-outline-secondary btn-sm" aria-label="前月">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <span class="btn btn-outline-secondary btn-sm disabled"
+                  th:text="${year + '年' + month + '月'}">2026年10月</span>
+            <a th:href="@{/reports/budget-vs-actual(year=${nextYearMonth.year}, month=${nextYearMonth.monthValue})}"
+               class="btn btn-outline-secondary btn-sm" aria-label="翌月">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100"><div class="card-body">
+                <div class="metric-label mb-2">予算合計</div>
+                <div class="metric-value" th:text="'¥' + ${#numbers.formatDecimal(totalBudget, 1, 'COMMA', 0, 'POINT')}">¥0</div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100"><div class="card-body">
+                <div class="metric-label mb-2">支出実績</div>
+                <div class="metric-value text-primary" th:text="'¥' + ${#numbers.formatDecimal(totalActual, 1, 'COMMA', 0, 'POINT')}">¥0</div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100"><div class="card-body">
+                <div class="metric-label mb-2">予算残額</div>
+                <div class="metric-value"
+                     th:classappend="${totalRemaining.signum() < 0} ? 'text-danger' : 'text-success'"
+                     th:text="'¥' + ${#numbers.formatDecimal(totalRemaining, 1, 'COMMA', 0, 'POINT')}">¥0</div>
+            </div></div>
+        </div>
+    </div>
+
+    <form class="card card-body mb-4" method="get" th:action="@{/reports/budget-vs-actual}">
+        <input type="hidden" name="year" th:value="${year}">
+        <input type="hidden" name="month" th:value="${month}">
+        <div class="row g-3 align-items-end">
+            <div class="col-sm-5 col-lg-4"><label class="form-label" for="departmentFilter">部門</label><select id="departmentFilter" class="form-select" name="departmentId"><option value="">すべての部門</option><option th:each="d : ${departments}" th:value="${d.id}" th:selected="${departmentId == d.id}" th:text="${d.name}">営業部</option></select></div>
+            <div class="col-sm-5 col-lg-4"><label class="form-label" for="projectFilter">プロジェクト</label><select id="projectFilter" class="form-select" name="projectId"><option value="">すべてのプロジェクト</option><option th:each="p : ${projects}" th:value="${p.id}" th:selected="${projectId == p.id}" th:text="${p.name}">新商品販促</option></select></div>
+            <div class="col-sm-2"><button class="btn btn-primary w-100" type="submit">絞り込む</button></div>
+        </div>
+    </form>
+
+    <section class="card">
+        <div class="card-header bg-white">
+            <div class="fw-semibold">カテゴリ別予算・実績</div>
+            <div class="small text-muted mt-1">予算未設定のカテゴリも支出実績とともに表示します。</div>
+        </div>
+        <div class="table-responsive">
+            <div th:if="${#lists.isEmpty(rows)}" class="text-muted text-center py-5">
+                支出カテゴリがありません。カテゴリ管理から追加してください。
+            </div>
+            <table class="table table-hover mb-0" th:if="${!#lists.isEmpty(rows)}">
+                <thead>
+                <tr>
+                    <th>カテゴリ</th>
+                    <th class="text-end">予算</th>
+                    <th class="text-end">実績</th>
+                    <th class="text-end">残額</th>
+                    <th style="min-width: 180px">執行率</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${rows}">
+                    <td class="fw-semibold" th:text="${row.categoryName}">食費</td>
+                    <td class="text-end text-nowrap"
+                        th:text="'¥' + ${#numbers.formatDecimal(row.budget, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                    <td class="text-end text-nowrap"
+                        th:text="'¥' + ${#numbers.formatDecimal(row.actual, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                    <td class="text-end text-nowrap"
+                        th:classappend="${row.remaining.signum() < 0} ? 'text-danger' : 'text-success'"
+                        th:text="'¥' + ${#numbers.formatDecimal(row.remaining, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1">
+                                <div class="progress-bar"
+                                     th:classappend="${row.overBudget} ? 'bg-danger' : 'bg-primary'"
+                                     th:style="'width:' + ${row.progressWidth} + '%'"></div>
+                            </div>
+                            <span class="small text-nowrap"
+                                  th:text="${row.executionRate == null ? '—' : #numbers.formatDecimal(row.executionRate, 1, 'COMMA', 1, 'POINT') + '%'}">—</span>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr class="fw-bold">
+                    <td>合計</td>
+                    <td class="text-end text-nowrap" th:text="'¥' + ${#numbers.formatDecimal(totalBudget, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                    <td class="text-end text-nowrap" th:text="'¥' + ${#numbers.formatDecimal(totalActual, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                    <td class="text-end text-nowrap"
+                        th:classappend="${totalRemaining.signum() < 0} ? 'text-danger' : 'text-success'"
+                        th:text="'¥' + ${#numbers.formatDecimal(totalRemaining, 1, 'COMMA', 0, 'POINT')}">¥0</td>
+                    <td></td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+</div>
+</body>
+</html>

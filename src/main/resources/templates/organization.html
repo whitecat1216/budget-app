@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head><title>部門・プロジェクト | 予算管理</title></head>
+<body>
+<div th:fragment="content">
+    <div class="mb-4">
+        <h1 class="page-heading mb-0">部門・プロジェクト</h1>
+        <p class="page-subtitle mb-0">組織とプロジェクトを登録して、予算管理に利用します。</p>
+    </div>
+    <div class="row g-3">
+        <div class="col-xl-6">
+            <section class="card h-100">
+                <div class="card-header bg-white"><div class="fw-semibold">部門を登録</div><div class="small text-muted mt-1">部門コードは企業内で一意にしてください。</div></div>
+                <div class="card-body">
+                    <form th:action="@{/organization/departments}" method="post" th:object="${department}" class="row g-2 mb-4">
+                        <div class="col-sm-3"><label class="form-label" for="departmentCode">部門コード</label><input id="departmentCode" class="form-control" th:field="*{code}" required maxlength="40"></div>
+                        <div class="col-sm-4"><label class="form-label" for="departmentName">部門名</label><input id="departmentName" class="form-control" th:field="*{name}" required maxlength="120"></div>
+                        <div class="col-sm-3"><label class="form-label" for="departmentManager">責任者</label><input id="departmentManager" class="form-control" th:field="*{manager}" maxlength="120"></div>
+                        <div class="col-sm-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">追加</button></div>
+                    </form>
+                    <div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>コード</th><th>部門名</th><th>責任者</th></tr></thead><tbody>
+                        <tr th:each="d : ${departments}"><td th:text="${d.code}">SALES</td><td class="fw-semibold" th:text="${d.name}">営業部</td><td th:text="${d.manager == null || d.manager.isBlank() ? '—' : d.manager}">—</td></tr>
+                        <tr th:if="${#lists.isEmpty(departments)}"><td colspan="3" class="text-center text-muted py-4">部門が登録されていません</td></tr>
+                    </tbody></table></div>
+                </div>
+            </section>
+        </div>
+        <div class="col-xl-6">
+            <section class="card h-100">
+                <div class="card-header bg-white"><div class="fw-semibold">プロジェクトを登録</div><div class="small text-muted mt-1">担当部門、責任者、実施期間を設定します。</div></div>
+                <div class="card-body">
+                    <form th:action="@{/organization/projects}" method="post" th:object="${project}" class="row g-2 mb-4">
+                        <div class="col-sm-3"><label class="form-label" for="projectCode">コード</label><input id="projectCode" class="form-control" th:field="*{code}" required maxlength="40"></div>
+                        <div class="col-sm-5"><label class="form-label" for="projectName">プロジェクト名</label><input id="projectName" class="form-control" th:field="*{name}" required maxlength="160"></div>
+                        <div class="col-sm-4"><label class="form-label" for="projectDepartment">部門</label><select id="projectDepartment" class="form-select" th:field="*{departmentId}"><option value="">未設定</option><option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}">営業部</option></select></div>
+                        <div class="col-sm-4"><label class="form-label" for="projectOwner">責任者</label><input id="projectOwner" class="form-control" th:field="*{owner}" maxlength="120"></div>
+                        <div class="col-sm-3"><label class="form-label" for="projectStart">開始日</label><input id="projectStart" class="form-control" type="date" th:field="*{startDate}"></div>
+                        <div class="col-sm-3"><label class="form-label" for="projectEnd">終了日</label><input id="projectEnd" class="form-control" type="date" th:field="*{endDate}"></div>
+                        <div class="col-sm-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">追加</button></div>
+                    </form>
+                    <div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>プロジェクト</th><th>部門</th><th>責任者</th><th>期間</th></tr></thead><tbody>
+                        <tr th:each="p : ${projects}"><td><div class="fw-semibold" th:text="${p.name}">新商品販促</div><div class="small text-muted" th:text="${p.code}">PRJ-001</div></td><td th:text="${p.departmentName == null ? '—' : p.departmentName}">営業部</td><td th:text="${p.owner == null || p.owner.isBlank() ? '—' : p.owner}">—</td><td class="text-nowrap small" th:text="${(p.startDate == null ? '—' : p.startDate) + ' 〜 ' + (p.endDate == null ? '—' : p.endDate)}">—</td></tr>
+                        <tr th:if="${#lists.isEmpty(projects)}"><td colspan="4" class="text-center text-muted py-4">プロジェクトが登録されていません</td></tr>
+                    </tbody></table></div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -7,12 +7,24 @@
         <form th:action="@{/team/invite}" method="post" th:object="${invite}">
             <div class="mb-3"><label class="form-label" for="inviteEmail">メールアドレス</label><input id="inviteEmail" class="form-control" type="email" th:field="*{email}" required></div>
             <div class="mb-3"><label class="form-label" for="inviteName">氏名</label><input id="inviteName" class="form-control" th:field="*{displayName}" required></div>
-            <div class="mb-4"><label class="form-label" for="inviteRole">ロール</label><select id="inviteRole" class="form-select" th:field="*{role}"><option value="MEMBER">申請者</option><option value="APPROVER">承認者</option><option value="DEPARTMENT_MANAGER">部門責任者</option><option value="PROJECT_MANAGER">プロジェクト責任者</option><option value="FINANCE_ADMIN">財務管理者</option><option value="EXECUTIVE">経営層（閲覧）</option><option value="AUDITOR">監査担当</option></select></div>
+            <div class="mb-3"><label class="form-label" for="inviteRole">ロール</label><select id="inviteRole" class="form-select" th:field="*{role}"><option value="MEMBER">申請者</option><option value="APPROVER">承認者</option><option value="DEPARTMENT_MANAGER">部門責任者</option><option value="PROJECT_MANAGER">プロジェクト責任者</option><option value="FINANCE_ADMIN">財務管理者</option><option value="EXECUTIVE">経営層（閲覧）</option><option value="AUDITOR">監査担当</option></select></div>
+            <div class="mb-3"><label class="form-label" for="inviteDepartments">担当部門（部門責任者）</label><select id="inviteDepartments" class="form-select" th:field="*{departmentIds}" multiple size="3"><option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}"></option></select></div>
+            <div class="mb-4"><label class="form-label" for="inviteProjects">担当プロジェクト（プロジェクト責任者）</label><select id="inviteProjects" class="form-select" th:field="*{projectIds}" multiple size="3"><option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.name}"></option></select></div>
             <button class="btn btn-primary w-100" type="submit">招待メールを送信</button>
         </form>
     </div></section></div>
-    <div class="col-xl-8"><section class="card"><div class="card-header bg-white"><div class="fw-semibold">企業メンバー</div><div class="small text-muted mt-1">ロールの変更は現在管理者による再招待で行います。</div></div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>氏名</th><th>メールアドレス</th><th>ロール</th><th>状態</th></tr></thead><tbody>
-        <tr th:each="u : ${users}"><td class="fw-semibold" th:text="${u.display_name}">利用者</td><td th:text="${u.email}">user@example.com</td><td th:text="${u.role}">MEMBER</td><td><span class="badge" th:classappend="${u.enabled ? 'text-bg-success' : 'text-bg-secondary'}" th:text="${u.enabled ? '有効' : '招待中'}">有効</span></td></tr>
+    <div class="col-xl-8"><section class="card"><div class="card-header bg-white"><div class="fw-semibold">企業メンバー</div><div class="small text-muted mt-1">ロール変更・アカウント停止・担当範囲を設定できます。部門責任者とプロジェクト責任者には範囲指定が必須です。</div></div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>氏名・メール</th><th>権限・担当範囲</th><th>状態</th><th></th></tr></thead><tbody>
+        <tr th:each="u : ${users}">
+            <td><div class="fw-semibold" th:text="${u.display_name}">利用者</div><div class="small text-muted" th:text="${u.email}">user@example.com</div></td>
+            <td><div th:if="${u.role == 'TENANT_ADMIN'}" class="small text-muted">テナント管理者（固定）</div><form th:if="${u.role != 'TENANT_ADMIN'}" class="d-flex flex-column gap-2" th:action="@{/team/{userId}/update(userId=${u.id})}" method="post">
+                <select class="form-select form-select-sm" name="role"><option value="MEMBER" th:selected="${u.role == 'MEMBER'}">申請者</option><option value="APPROVER" th:selected="${u.role == 'APPROVER'}">承認者</option><option value="DEPARTMENT_MANAGER" th:selected="${u.role == 'DEPARTMENT_MANAGER'}">部門責任者</option><option value="PROJECT_MANAGER" th:selected="${u.role == 'PROJECT_MANAGER'}">プロジェクト責任者</option><option value="FINANCE_ADMIN" th:selected="${u.role == 'FINANCE_ADMIN'}">財務管理者</option><option value="EXECUTIVE" th:selected="${u.role == 'EXECUTIVE'}">経営層</option><option value="AUDITOR" th:selected="${u.role == 'AUDITOR'}">監査担当</option></select>
+                <select class="form-select form-select-sm" name="departmentIds" multiple size="2" aria-label="担当部門"><option th:each="d : ${departments}" th:value="${d.id}" th:selected="${#strings.contains(u.department_scope_ids, '|' + d.id + '|')}" th:text="${d.name}"></option></select>
+                <select class="form-select form-select-sm" name="projectIds" multiple size="2" aria-label="担当プロジェクト"><option th:each="p : ${projects}" th:value="${p.id}" th:selected="${#strings.contains(u.project_scope_ids, '|' + p.id + '|')}" th:text="${p.name}"></option></select>
+                <label class="small"><input type="checkbox" name="enabled" value="true" th:checked="${u.enabled}"> 利用可能</label>
+                <button class="btn btn-sm btn-outline-primary" type="submit">保存</button>
+            </form></td>
+            <td><span class="badge" th:classappend="${u.enabled ? 'text-bg-success' : 'text-bg-secondary'}" th:text="${u.enabled ? '有効' : '招待中／停止中'}">有効</span></td>
+        </tr>
         <tr th:if="${#lists.isEmpty(users)}"><td colspan="4" class="text-center text-muted py-5">ユーザーはありません。</td></tr>
     </tbody></table></div></section></div></div>
 </div></body></html>

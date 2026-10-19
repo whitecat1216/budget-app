@@ -47,6 +47,7 @@ public class TeamService {
         user.setDisplayName(form.getDisplayName().trim()); user.setRole(form.getRole());
         user.setPasswordHash(passwordEncoder.encode(HexFormat.of().formatHex(secret)));
         userMapper.insertInvite(user);
+        applyScopes(user.getId(), tenantId, form.getRole(), form.getDepartmentIds(), form.getProjectIds());
         String token = HexFormat.of().formatHex(secret);
         registrationMapper.insertVerification(user.getId(), sha256(token), LocalDateTime.now().plusHours(24), "INVITE");
         JavaMailSender sender = mailSenderProvider.getIfAvailable();
@@ -56,6 +57,33 @@ public class TeamService {
         mail.setText("招待を受けるには24時間以内にリンクを開き、パスワードを設定してください。\n\n" + publicUrl + "/accept-invitation?token=" + token);
         sender.send(mail);
         auditService.record("INVITE", "USER", user.getId(), "ユーザー招待を送信 (" + form.getRole() + ")");
+    }
+
+    @Transactional
+    public void updateUser(long userId, String role, boolean enabled, List<Long> departmentIds, List<Long> projectIds) {
+        if (!ALLOWED_ROLES.contains(role)) throw new IllegalArgumentException("指定されたロールは利用できません。");
+        long tenantId = TenantSession.tenantId();
+        long actorId = TenantSession.currentUser().getId();
+        if (userId == actorId && !enabled) throw new IllegalArgumentException("自分自身のアカウントは停止できません。");
+        if (userMapper.countTenantUser(userId, tenantId) != 1) throw new IllegalArgumentException("ユーザーが見つかりません。");
+        if (enabled && userMapper.isInvitePending(userId)) throw new IllegalArgumentException("招待を受諾するまでは有効化できません。");
+        if (userMapper.updateRole(userId, tenantId, role) != 1) throw new IllegalArgumentException("このユーザーのロールは変更できません。");
+        if (userMapper.setEnabled(userId, tenantId, enabled) != 1) throw new IllegalArgumentException("このユーザーの状態は変更できません。");
+        userMapper.bumpAuthVersion(tenantId, userId);
+        userMapper.clearScopes(tenantId, userId);
+        applyScopes(userId, tenantId, role, departmentIds, projectIds);
+        auditService.record("USER_UPDATED", "USER", userId, "ロール・利用状態・データ範囲を更新 (" + role + ", enabled=" + enabled + ")");
+    }
+
+    private void applyScopes(long userId, long tenantId, String role, List<Long> departmentIds, List<Long> projectIds) {
+        List<Long> departments = departmentIds == null ? List.of() : departmentIds.stream().distinct().toList();
+        List<Long> projects = projectIds == null ? List.of() : projectIds.stream().distinct().toList();
+        if (role.equals("DEPARTMENT_MANAGER") && departments.isEmpty()) throw new IllegalArgumentException("部門責任者には担当部門を指定してください。");
+        if (role.equals("PROJECT_MANAGER") && projects.isEmpty()) throw new IllegalArgumentException("プロジェクト責任者には担当プロジェクトを指定してください。");
+        if (!departments.isEmpty() && userMapper.assignDepartmentScopes(tenantId, userId, departments) != departments.size())
+            throw new IllegalArgumentException("指定された部門に無効な項目があります。");
+        if (!projects.isEmpty() && userMapper.assignProjectScopes(tenantId, userId, projects) != projects.size())
+            throw new IllegalArgumentException("指定されたプロジェクトに無効な項目があります。");
     }
 
     @Transactional

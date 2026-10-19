@@ -73,8 +73,8 @@ public class ReportController {
         model.addAttribute("totalActual", totalActual);
         model.addAttribute("totalRemaining", totalBudget.subtract(totalActual));
         model.addAttribute("activeNav", "reports");
-        model.addAttribute("departments", organizationMapper.findDepartments(TenantSession.tenantId()));
-        model.addAttribute("projects", organizationMapper.findProjects(TenantSession.tenantId()));
+        model.addAttribute("departments", organizationMapper.findDepartments(TenantSession.tenantId()).stream().filter(d -> TenantSession.canAccess(d.getId(), null)).toList());
+        model.addAttribute("projects", organizationMapper.findProjects(TenantSession.tenantId()).stream().filter(p -> TenantSession.canAccess(p.getDepartmentId(), p.getId())).toList());
         model.addAttribute("departmentId", departmentId);
         model.addAttribute("projectId", projectId);
         model.addAttribute("selectedMonth", selectedMonth);

@@ -113,16 +113,7 @@
                                          role="progressbar" th:aria-valuenow="${b.amount.compareTo(T(java.math.BigDecimal).ZERO) == 0 ? 0 : T(java.lang.Math).min(100, b.spent.doubleValue() / b.amount.doubleValue() * 100)}" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                             </td>
-                            <td class="text-end">
-                                <form th:action="@{/budgets/{id}/delete(id=${b.id})}" method="post"
-                                      class="d-inline" onsubmit="return confirm('削除しますか？');">
-                                    <input type="hidden" name="year" th:value="${year}">
-                                    <input type="hidden" name="month" th:value="${month}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </td>
+                            <td class="text-end"><a class="btn btn-sm btn-outline-primary text-nowrap" th:href="@{/budget-change-requests(budgetId=${b.id})}">変更申請</a></td>
                         </tr>
                         </tbody>
                     </table>

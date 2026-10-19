@@ -27,6 +27,12 @@ mybatis:
 server:
   port: 8080
   forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: lax
 
 app:
   public-url: ${APP_PUBLIC_URL:http://localhost:8080}

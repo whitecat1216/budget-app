@@ -21,8 +21,8 @@ public class OrganizationController {
 
     @GetMapping
     public String index(Model model) {
-        model.addAttribute("departments", organizationMapper.findDepartments(TenantSession.tenantId()));
-        model.addAttribute("projects", organizationMapper.findProjects(TenantSession.tenantId()));
+        model.addAttribute("departments", organizationMapper.findDepartments(TenantSession.tenantId()).stream().filter(d -> TenantSession.canAccess(d.getId(), null)).toList());
+        model.addAttribute("projects", organizationMapper.findProjects(TenantSession.tenantId()).stream().filter(p -> TenantSession.canAccess(p.getDepartmentId(), p.getId())).toList());
         model.addAttribute("department", new Department());
         model.addAttribute("project", new Project());
         model.addAttribute("activeNav", "organization");
@@ -42,6 +42,9 @@ public class OrganizationController {
     @PostMapping("/projects")
     @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN','DEPARTMENT_MANAGER')")
     public String createProject(@ModelAttribute Project project, RedirectAttributes redirect) {
+        if (project.getDepartmentId() != null && !organizationMapper.departmentBelongsToTenant(project.getDepartmentId(), TenantSession.tenantId()))
+            throw new IllegalArgumentException("部門を確認してください。");
+        TenantSession.requireScope(project.getDepartmentId(), null);
         project.setTenantId(TenantSession.tenantId());
         organizationMapper.insertProject(project);
         auditService.record("CREATE", "PROJECT", project.getId(), "プロジェクトを登録");

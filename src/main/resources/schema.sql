@@ -53,9 +53,11 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(100) NOT NULL,
     role        VARCHAR(30) NOT NULL DEFAULT 'MEMBER',
     enabled     BOOLEAN NOT NULL DEFAULT FALSE,
+    auth_version INTEGER NOT NULL DEFAULT 0,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (tenant_id, email)
 );
+ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_version INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS email_verifications (
     id          BIGSERIAL PRIMARY KEY,
@@ -215,6 +217,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS tenant_id BIGINT REFERENCES tenants(id);
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS department_id BIGINT REFERENCES departments(id);
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS project_id BIGINT REFERENCES projects(id);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS created_by BIGINT REFERENCES users(id);
 UPDATE transactions SET tenant_id = 1 WHERE tenant_id IS NULL;
 ALTER TABLE transactions ALTER COLUMN tenant_id SET DEFAULT 1;
 ALTER TABLE transactions ALTER COLUMN tenant_id SET NOT NULL;

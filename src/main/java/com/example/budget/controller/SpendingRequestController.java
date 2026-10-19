@@ -26,7 +26,7 @@ public class SpendingRequestController {
     @GetMapping
     public String list(Model model) {
         var user = TenantSession.currentUser();
-        boolean canReview = user.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_TENANT_ADMIN") || a.getAuthority().equals("ROLE_FINANCE_ADMIN") || a.getAuthority().equals("ROLE_APPROVER"));
+        boolean canReview = user.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_TENANT_ADMIN") || a.getAuthority().equals("ROLE_FINANCE_ADMIN") || a.getAuthority().equals("ROLE_APPROVER") || a.getAuthority().equals("ROLE_DEPARTMENT_MANAGER") || a.getAuthority().equals("ROLE_PROJECT_MANAGER"));
         model.addAttribute("requests", requestService.list());
         model.addAttribute("request", new SpendingRequest());
         model.addAttribute("departments", organizationMapper.findDepartments(user.getTenantId()));
@@ -59,7 +59,7 @@ public class SpendingRequestController {
     }
 
     @PostMapping("/{id}/review")
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN','APPROVER')")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN','APPROVER','DEPARTMENT_MANAGER','PROJECT_MANAGER')")
     public String review(@PathVariable long id, @RequestParam String action,
                          @RequestParam(required = false) String comment, RedirectAttributes redirect) {
         requestService.review(id, action, comment);

@@ -26,4 +26,7 @@ public interface OrganizationMapper {
 
     @Select("SELECT COUNT(*) > 0 FROM projects WHERE id = #{id} AND tenant_id = #{tenantId}")
     boolean projectBelongsToTenant(@Param("id") Long id, @Param("tenantId") long tenantId);
+
+    @Select("SELECT department_id FROM projects WHERE id=#{id} AND tenant_id=#{tenantId}")
+    Long findProjectDepartmentId(@Param("id") Long id, @Param("tenantId") long tenantId);
 }

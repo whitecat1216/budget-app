@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head><title>予算変更申請 | NEXUS</title></head><body><div th:fragment="content">
+    <div class="mb-4"><h1 class="page-heading mb-0">予算変更申請</h1><p class="page-subtitle mb-0">承認されるまで、現在の予算額は変わりません。</p></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <section class="card mb-4"><div class="card-header bg-white fw-semibold">変更を申請</div><div class="card-body">
+        <form class="row g-3 align-items-end" th:action="@{/budget-change-requests}" method="post">
+            <div class="col-md-4"><label class="form-label" for="budgetId">対象予算</label><select id="budgetId" class="form-select" name="budgetId" required><option value="">選択してください</option><option th:each="b : ${budgets}" th:value="${b.id}" th:selected="${selectedBudgetId != null && selectedBudgetId == b.id}" th:text="${b.year + '年' + b.month + '月 / ' + b.categoryName + ' / 現在 ¥' + #numbers.formatDecimal(b.amount, 1, 'COMMA', 0, 'POINT')}"></option></select></div>
+            <div class="col-md-3"><label class="form-label" for="changeAmount">増減額（円）</label><input id="changeAmount" class="form-control" name="changeAmount" type="number" step="1" required placeholder="例: 50000 または -10000"></div>
+            <div class="col-md-4"><label class="form-label" for="reason">変更理由</label><input id="reason" class="form-control" name="reason" maxlength="1000" required></div>
+            <div class="col-md-1"><button class="btn btn-primary w-100">申請</button></div>
+        </form>
+    </div></section>
+    <section class="card"><div class="card-header bg-white fw-semibold">申請履歴</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>対象予算</th><th>申請者</th><th>変更額</th><th>理由</th><th>状態</th><th>審査</th></tr></thead><tbody>
+        <tr th:each="r : ${requests}"><td th:text="${r.year + '年' + r.month + '月 / ' + r.categoryName}">2026年10月</td><td th:text="${r.requesterName}">利用者</td><td th:text="${(r.changeAmount.signum() > 0 ? '+' : '') + #numbers.formatDecimal(r.changeAmount, 1, 'COMMA', 0, 'POINT') + '円'}">+50,000円</td><td th:text="${r.reason}">理由</td><td><span class="badge" th:classappend="${r.status == 'PENDING' ? 'text-bg-warning' : (r.status == 'APPROVED' ? 'text-bg-success' : 'text-bg-secondary')}" th:text="${r.status}">PENDING</span></td><td>
+            <form th:if="${r.status == 'PENDING'}" class="d-flex gap-1" th:action="@{/budget-change-requests/{id}/review(id=${r.id})}" method="post"><input class="form-control form-control-sm" name="comment" maxlength="1000" placeholder="コメント"><button class="btn btn-sm btn-success" name="decision" value="APPROVED">承認</button><button class="btn btn-sm btn-outline-secondary" name="decision" value="REJECTED">却下</button></form>
+            <span th:if="${r.status != 'PENDING'}" class="small text-muted" th:text="${r.reviewComment}"></span>
+        </td></tr>
+        <tr th:if="${#lists.isEmpty(requests)}"><td colspan="6" class="text-center text-muted py-5">申請はありません。</td></tr>
+    </tbody></table></div></section>
+</div></body></html>

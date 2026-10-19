@@ -14,6 +14,7 @@ public class Transaction {
     private Long departmentId;
     private String departmentName;
     private Long projectId;
+    private Long createdBy;
     private String projectName;
     private String type; // INCOME or EXPENSE
     private BigDecimal amount;

@@ -92,6 +92,7 @@
             <div class="nav-section">ワークスペース</div>
             <a class="nav-link" href="/" th:classappend="${activeNav == 'dashboard'} ? 'active'"><i class="bi bi-grid-1x2-fill"></i><span>ダッシュボード</span></a>
             <a class="nav-link" href="/budgets" th:classappend="${activeNav == 'budgets'} ? 'active'"><i class="bi bi-wallet2"></i><span>予算管理</span></a>
+            <a class="nav-link" href="/budget-change-requests" th:classappend="${activeNav == 'budget-changes'} ? 'active'"><i class="bi bi-arrow-left-right"></i><span>予算変更申請</span></a>
             <a class="nav-link" href="/reports/budget-vs-actual" th:classappend="${activeNav == 'reports'} ? 'active'"><i class="bi bi-bar-chart-line"></i><span>予実レポート</span></a>
             <a class="nav-link" href="/requests" th:classappend="${activeNav == 'requests'} ? 'active'"><i class="bi bi-check2-square"></i><span>申請・承認</span></a>
             <a class="nav-link" href="/organization" th:classappend="${activeNav == 'organization'} ? 'active'"><i class="bi bi-diagram-3"></i><span>部門・プロジェクト</span></a>

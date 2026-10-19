@@ -28,8 +28,8 @@ public class TransactionController {
         model.addAttribute("activeNav", "transactions");
         model.addAttribute("transactions", transactionService.findAll());
         model.addAttribute("categories", categoryService.findAll());
-        model.addAttribute("departments", organizationMapper.findDepartments(TenantSession.tenantId()));
-        model.addAttribute("projects", organizationMapper.findProjects(TenantSession.tenantId()));
+        model.addAttribute("departments", organizationMapper.findDepartments(TenantSession.tenantId()).stream().filter(d -> TenantSession.canAccess(d.getId(), null)).toList());
+        model.addAttribute("projects", organizationMapper.findProjects(TenantSession.tenantId()).stream().filter(p -> TenantSession.canAccess(p.getDepartmentId(), p.getId())).toList());
         model.addAttribute("transaction", new Transaction());
         model.addAttribute("today", LocalDate.now());
         return "transactions";
@@ -56,7 +56,7 @@ public class TransactionController {
     }
 
     @PostMapping("/{id}/delete")
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN','MEMBER','APPROVER','DEPARTMENT_MANAGER','PROJECT_MANAGER')")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN','MEMBER','DEPARTMENT_MANAGER','PROJECT_MANAGER')")
     public String delete(@PathVariable Long id, RedirectAttributes ra) {
         transactionService.delete(id);
         ra.addFlashAttribute("message", "取引を削除しました");

@@ -23,7 +23,7 @@ public class BudgetService {
     private final AuditService auditService;
 
     public List<Budget> findAll() {
-        return budgetMapper.findAll(TenantSession.tenantId());
+        return budgetMapper.findAll(TenantSession.tenantId()).stream().filter(b -> TenantSession.canAccess(b.getDepartmentId(), b.getProjectId())).toList();
     }
 
     public Budget findById(Long id) {
@@ -31,19 +31,19 @@ public class BudgetService {
         if (budget != null) {
             fillSpent(budget);
         }
-        return budget;
+        return budget != null && TenantSession.canAccess(budget.getDepartmentId(), budget.getProjectId()) ? budget : null;
     }
 
     public List<Budget> findByYearMonth(int year, int month) {
         List<Budget> budgets = budgetMapper.findByYearMonth(year, month, TenantSession.tenantId());
         budgets.forEach(this::fillSpent);
-        return budgets;
+        return budgets.stream().filter(b -> TenantSession.canAccess(b.getDepartmentId(), b.getProjectId())).toList();
     }
 
     public List<Budget> findByYearMonthAndScope(int year, int month, Long departmentId, Long projectId) {
         List<Budget> budgets = budgetMapper.findByYearMonthAndScope(year, month, departmentId, projectId, TenantSession.tenantId());
         budgets.forEach(this::fillSpent);
-        return budgets;
+        return budgets.stream().filter(b -> TenantSession.canAccess(b.getDepartmentId(), b.getProjectId())).toList();
     }
 
     public Budget findByCategoryAndYearMonth(Long categoryId, int year, int month) {
@@ -51,7 +51,7 @@ public class BudgetService {
         if (budget != null) {
             fillSpent(budget);
         }
-        return budget;
+        return budget != null && TenantSession.canAccess(budget.getDepartmentId(), budget.getProjectId()) ? budget : null;
     }
 
     @Transactional
@@ -64,6 +64,9 @@ public class BudgetService {
 
     @Transactional
     public Budget update(Budget budget) {
+        Budget existing = budgetMapper.findById(budget.getId(), TenantSession.tenantId());
+        if (existing == null) throw new IllegalArgumentException("予算が見つかりません。");
+        TenantSession.requireScope(existing.getDepartmentId(), existing.getProjectId());
         validateDimensions(budget);
         budgetMapper.update(budget);
         auditService.record("UPDATE", "BUDGET", budget.getId(), "予算を更新");
@@ -72,6 +75,9 @@ public class BudgetService {
 
     @Transactional
     public void delete(Long id) {
+        Budget existing = budgetMapper.findById(id, TenantSession.tenantId());
+        if (existing == null) throw new IllegalArgumentException("予算が見つかりません。");
+        TenantSession.requireScope(existing.getDepartmentId(), existing.getProjectId());
         budgetMapper.delete(id, TenantSession.tenantId());
         auditService.record("DELETE", "BUDGET", id, "予算を削除");
     }
@@ -90,6 +96,12 @@ public class BudgetService {
             throw new IllegalArgumentException("部門を確認してください。");
         if (budget.getProjectId() != null && !organizationMapper.projectBelongsToTenant(budget.getProjectId(), tenantId))
             throw new IllegalArgumentException("プロジェクトを確認してください。");
+        if (budget.getProjectId() != null) {
+            Long projectDepartmentId = organizationMapper.findProjectDepartmentId(budget.getProjectId(), tenantId);
+            if (projectDepartmentId != null && budget.getDepartmentId() == null) budget.setDepartmentId(projectDepartmentId);
+            else if (projectDepartmentId != null && !projectDepartmentId.equals(budget.getDepartmentId())) throw new IllegalArgumentException("プロジェクトに紐づく部門を選択してください。");
+        }
         budget.setTenantId(tenantId);
+        TenantSession.requireScope(budget.getDepartmentId(), budget.getProjectId());
     }
 }

@@ -29,13 +29,13 @@ public interface TransactionMapper {
     List<Transaction> findByDateRange(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("tenantId") long tenantId);
 
     @Select("SELECT t.*, c.name as category_name FROM transactions t " +
-            "LEFT JOIN categories c ON t.category_id = c.id " +
+            "LEFT JOIN categories c ON t.category_id = c.id AND c.tenant_id=t.tenant_id " +
             "WHERE t.category_id = #{categoryId} AND t.tenant_id = #{tenantId} " +
             "ORDER BY t.transaction_date DESC")
     List<Transaction> findByCategory(@Param("categoryId") Long categoryId, @Param("tenantId") long tenantId);
 
-    @Insert("INSERT INTO transactions (tenant_id, category_id, department_id, project_id, type, amount, description, transaction_date, created_at, updated_at) " +
-            "VALUES (#{tenantId}, #{categoryId}, #{departmentId}, #{projectId}, #{type}, #{amount}, #{description}, #{transactionDate}, NOW(), NOW())")
+    @Insert("INSERT INTO transactions (tenant_id, created_by, category_id, department_id, project_id, type, amount, description, transaction_date, created_at, updated_at) " +
+            "VALUES (#{tenantId}, #{createdBy}, #{categoryId}, #{departmentId}, #{projectId}, #{type}, #{amount}, #{description}, #{transactionDate}, NOW(), NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Transaction transaction);
 
@@ -68,7 +68,7 @@ public interface TransactionMapper {
                                             @Param("tenantId") long tenantId);
 
     @Select("SELECT c.name as category, COALESCE(SUM(t.amount), 0) as total " +
-            "FROM transactions t JOIN categories c ON t.category_id = c.id " +
+            "FROM transactions t JOIN categories c ON t.category_id = c.id AND c.tenant_id=t.tenant_id " +
             "WHERE t.type = 'EXPENSE' AND t.transaction_date BETWEEN #{start} AND #{end} AND t.tenant_id = #{tenantId} " +
             "GROUP BY c.id, c.name ORDER BY total DESC")
     List<Map<String, Object>> expenseSummaryByCategory(@Param("start") LocalDate start,
@@ -91,8 +91,8 @@ public interface TransactionMapper {
     @Select("SELECT c.id AS category_id, c.name AS category_name, COALESCE(SUM(t.amount), 0) AS actual " +
             "FROM categories c LEFT JOIN transactions t ON t.category_id = c.id " +
             "AND t.type = 'EXPENSE' AND t.transaction_date BETWEEN #{start} AND #{end} " +
-            "AND (#{departmentId} IS NULL OR t.department_id = #{departmentId}) " +
-            "AND (#{projectId} IS NULL OR t.project_id = #{projectId}) AND t.tenant_id = #{tenantId} " +
+            "AND (CAST(#{departmentId} AS BIGINT) IS NULL OR t.department_id = #{departmentId}) " +
+            "AND (CAST(#{projectId} AS BIGINT) IS NULL OR t.project_id = #{projectId}) AND t.tenant_id = #{tenantId} " +
             "WHERE c.type = 'EXPENSE' AND c.tenant_id = #{tenantId} GROUP BY c.id, c.name ORDER BY actual DESC, c.name")
     @Results({
             @Result(property = "categoryId", column = "category_id"),

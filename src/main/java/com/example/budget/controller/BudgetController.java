@@ -35,8 +35,8 @@ public class BudgetController {
 
         model.addAttribute("budgets", budgetService.findByYearMonth(y, m));
         model.addAttribute("categories", categoryService.findByType("EXPENSE"));
-        model.addAttribute("departments", organizationMapper.findDepartments(TenantSession.tenantId()));
-        model.addAttribute("projects", organizationMapper.findProjects(TenantSession.tenantId()));
+        model.addAttribute("departments", organizationMapper.findDepartments(TenantSession.tenantId()).stream().filter(d -> TenantSession.canAccess(d.getId(), null)).toList());
+        model.addAttribute("projects", organizationMapper.findProjects(TenantSession.tenantId()).stream().filter(p -> TenantSession.canAccess(p.getDepartmentId(), p.getId())).toList());
         model.addAttribute("budget", new Budget());
         model.addAttribute("year", y);
         model.addAttribute("month", m);
@@ -63,14 +63,4 @@ public class BudgetController {
         return "redirect:/budgets?year=" + budget.getYear() + "&month=" + budget.getMonth();
     }
 
-    @PostMapping("/{id}/delete")
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN')")
-    public String delete(@PathVariable Long id,
-                         @RequestParam int year,
-                         @RequestParam int month,
-                         RedirectAttributes ra) {
-        budgetService.delete(id);
-        ra.addFlashAttribute("message", "予算を削除しました");
-        return "redirect:/budgets?year=" + year + "&month=" + month;
-    }
 }

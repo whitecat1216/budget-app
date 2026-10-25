@@ -34,24 +34,9 @@ public interface BudgetMapper {
                                          @Param("projectId") Long projectId,
                                          @Param("tenantId") long tenantId);
 
-    @Select("SELECT b.*, c.name as category_name, d.name as department_name, p.name as project_name FROM budgets b " +
-            "LEFT JOIN categories c ON b.category_id = c.id AND c.tenant_id=b.tenant_id " +
-            "LEFT JOIN departments d ON b.department_id = d.id AND d.tenant_id=b.tenant_id LEFT JOIN projects p ON b.project_id = p.id AND p.tenant_id=b.tenant_id " +
-            "WHERE b.category_id = #{categoryId} AND b.year = #{year} AND b.month = #{month} AND b.tenant_id = #{tenantId}")
-    Budget findByCategoryAndYearMonth(@Param("categoryId") Long categoryId,
-                                      @Param("year") int year,
-                                      @Param("month") int month,
-                                      @Param("tenantId") long tenantId);
-
     @Insert("INSERT INTO budgets (tenant_id, category_id, department_id, project_id, year, month, amount, created_at, updated_at) " +
             "VALUES (#{tenantId}, #{categoryId}, #{departmentId}, #{projectId}, #{year}, #{month}, #{amount}, NOW(), NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Budget budget);
 
-    @Update("UPDATE budgets SET category_id = #{categoryId}, department_id = #{departmentId}, project_id = #{projectId}, year = #{year}, month = #{month}, " +
-            "amount = #{amount}, updated_at = NOW() WHERE id = #{id} AND tenant_id = #{tenantId}")
-    int update(Budget budget);
-
-    @Delete("DELETE FROM budgets WHERE id = #{id} AND tenant_id = #{tenantId}")
-    int delete(@Param("id") Long id, @Param("tenantId") long tenantId);
 }

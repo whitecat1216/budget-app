@@ -151,13 +151,41 @@ CREATE TABLE IF NOT EXISTS accounting_sync_runs (
     id BIGSERIAL PRIMARY KEY,
     tenant_id BIGINT NOT NULL REFERENCES tenants(id),
     connection_id BIGINT NOT NULL REFERENCES accounting_connections(id),
+    requested_by BIGINT REFERENCES users(id),
+    correlation_id VARCHAR(36),
     status VARCHAR(24) NOT NULL,
     fetched_count INT NOT NULL DEFAULT 0,
     imported_count INT NOT NULL DEFAULT 0,
     error_message VARCHAR(1000),
-    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    finished_at TIMESTAMP
+    attempt_count INT NOT NULL DEFAULT 0,
+    max_attempts INT NOT NULL DEFAULT 5,
+    cursor_value TEXT,
+    next_attempt_at TIMESTAMP,
+    worker_lease_until TIMESTAMP,
+    queued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    started_at TIMESTAMP,
+    finished_at TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE accounting_sync_runs ADD COLUMN IF NOT EXISTS requested_by BIGINT REFERENCES users(id);
+ALTER TABLE accounting_sync_runs ADD COLUMN IF NOT EXISTS correlation_id VARCHAR(36);
+ALTER TABLE accounting_sync_runs ADD COLUMN IF NOT EXISTS attempt_count INT NOT NULL DEFAULT 0;
+ALTER TABLE accounting_sync_runs ADD COLUMN IF NOT EXISTS max_attempts INT NOT NULL DEFAULT 5;
+ALTER TABLE accounting_sync_runs ADD COLUMN IF NOT EXISTS cursor_value TEXT;
+ALTER TABLE accounting_sync_runs ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMP;
+ALTER TABLE accounting_sync_runs ADD COLUMN IF NOT EXISTS worker_lease_until TIMESTAMP;
+ALTER TABLE accounting_sync_runs ADD COLUMN IF NOT EXISTS queued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE accounting_sync_runs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE accounting_sync_runs ALTER COLUMN started_at DROP DEFAULT;
+
+CREATE INDEX IF NOT EXISTS idx_accounting_sync_runs_tenant_queued
+    ON accounting_sync_runs (tenant_id, queued_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_accounting_sync_runs_worker
+    ON accounting_sync_runs (status, next_attempt_at, queued_at, id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_accounting_sync_runs_one_active_per_connection
+    ON accounting_sync_runs (connection_id)
+    WHERE status IN ('QUEUED', 'RUNNING', 'RETRY_WAIT');
 
 CREATE TABLE IF NOT EXISTS external_actuals (
     id BIGSERIAL PRIMARY KEY,
@@ -174,6 +202,9 @@ CREATE TABLE IF NOT EXISTS external_actuals (
     imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (connection_id, external_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_external_actuals_tenant_booked_on
+    ON external_actuals (tenant_id, booked_on);
 
 -- Categories
 CREATE TABLE IF NOT EXISTS categories (

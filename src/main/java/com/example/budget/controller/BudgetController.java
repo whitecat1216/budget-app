@@ -54,13 +54,4 @@ public class BudgetController {
         return "redirect:/budgets?year=" + budget.getYear() + "&month=" + budget.getMonth();
     }
 
-    @PostMapping("/{id}/update")
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN','FINANCE_ADMIN')")
-    public String update(@PathVariable Long id, @ModelAttribute Budget budget, RedirectAttributes ra) {
-        budget.setId(id);
-        budgetService.update(budget);
-        ra.addFlashAttribute("message", "予算を更新しました");
-        return "redirect:/budgets?year=" + budget.getYear() + "&month=" + budget.getMonth();
-    }
-
 }

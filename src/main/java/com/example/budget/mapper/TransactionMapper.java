@@ -2,6 +2,7 @@ package com.example.budget.mapper;
 
 import com.example.budget.model.Transaction;
 import com.example.budget.model.CategoryExpenseSummary;
+import com.example.budget.model.ExternalActualCategorySummary;
 import org.apache.ibatis.annotations.*;
 
 import java.math.BigDecimal;
@@ -104,4 +105,34 @@ public interface TransactionMapper {
                                                                   @Param("departmentId") Long departmentId,
                                                                   @Param("projectId") Long projectId,
                                                                   @Param("tenantId") long tenantId);
+
+    @Select("SELECT COALESCE(SUM(amount), 0) FROM external_actuals WHERE tenant_id = #{tenantId} " +
+            "AND booked_on BETWEEN #{start} AND #{end}")
+    BigDecimal sumImportedActuals(@Param("start") LocalDate start, @Param("end") LocalDate end,
+                                  @Param("tenantId") long tenantId);
+
+    @Select("SELECT COALESCE(SUM(amount), 0) FROM external_actuals WHERE tenant_id = #{tenantId} AND category_id = #{categoryId} " +
+            "AND booked_on BETWEEN #{start} AND #{end} " +
+            "AND (CAST(#{departmentId} AS BIGINT) IS NULL OR department_id = #{departmentId}) " +
+            "AND (CAST(#{projectId} AS BIGINT) IS NULL OR project_id = #{projectId})")
+    BigDecimal sumImportedActualsByCategory(@Param("tenantId") long tenantId, @Param("categoryId") long categoryId,
+            @Param("start") LocalDate start, @Param("end") LocalDate end,
+            @Param("departmentId") Long departmentId, @Param("projectId") Long projectId);
+
+    @Select("SELECT a.category_id, COALESCE(c.name, '未分類') AS category_name, a.department_id, a.project_id, SUM(a.amount) AS amount " +
+            "FROM external_actuals a LEFT JOIN categories c ON c.id = a.category_id AND c.tenant_id = a.tenant_id " +
+            "WHERE a.tenant_id = #{tenantId} AND a.booked_on BETWEEN #{start} AND #{end} " +
+            "AND (CAST(#{departmentId} AS BIGINT) IS NULL OR a.department_id = #{departmentId}) " +
+            "AND (CAST(#{projectId} AS BIGINT) IS NULL OR a.project_id = #{projectId}) " +
+            "GROUP BY a.category_id, c.name, a.department_id, a.project_id")
+    @Results({
+            @Result(property = "categoryId", column = "category_id"),
+            @Result(property = "categoryName", column = "category_name"),
+            @Result(property = "departmentId", column = "department_id"),
+            @Result(property = "projectId", column = "project_id"),
+            @Result(property = "amount", column = "amount")
+    })
+    List<ExternalActualCategorySummary> summarizeImportedActuals(@Param("tenantId") long tenantId,
+            @Param("start") LocalDate start, @Param("end") LocalDate end,
+            @Param("departmentId") Long departmentId, @Param("projectId") Long projectId);
 }

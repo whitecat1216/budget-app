@@ -53,7 +53,7 @@
         <input type="hidden" name="month" th:value="${month}">
         <div class="row g-3 align-items-end">
             <div class="col-sm-5 col-lg-4"><label class="form-label" for="departmentFilter">部門</label><select id="departmentFilter" class="form-select" name="departmentId"><option value="">すべての部門</option><option th:each="d : ${departments}" th:value="${d.id}" th:selected="${departmentId == d.id}" th:text="${d.name}">営業部</option></select></div>
-            <div class="col-sm-5 col-lg-4"><label class="form-label" for="projectFilter">プロジェクト</label><select id="projectFilter" class="form-select" name="projectId"><option value="">すべてのプロジェクト</option><option th:each="p : ${projects}" th:value="${p.id}" th:selected="${projectId == p.id}" th:text="${p.name}">新商品販促</option></select></div>
+            <div class="col-sm-5 col-lg-4"><label class="form-label" for="projectFilter">プロジェクト</label><select id="projectFilter" class="form-select" name="projectId"><option value="">すべてのプロジェクト</option><option th:each="p : ${projects}" th:value="${p.id}" th:attr="data-department-id=${p.departmentId}" th:selected="${projectId == p.id}" th:text="${p.name}">新商品販促</option></select><div class="form-text" id="projectFilterHelp">部門を選ぶと、その部門のプロジェクトに絞られます。</div></div>
             <div class="col-sm-2"><button class="btn btn-primary w-100" type="submit">絞り込む</button></div>
         </div>
     </form>
@@ -114,6 +114,7 @@
             </table>
         </div>
     </section>
+    <script th:src="@{/js/report-filters.js}" defer></script>
 </div>
 </body>
 </html>

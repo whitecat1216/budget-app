@@ -3,6 +3,7 @@ package com.example.budget.service;
 import com.example.budget.mapper.TransactionMapper;
 import com.example.budget.model.Transaction;
 import com.example.budget.model.CategoryExpenseSummary;
+import com.example.budget.model.ExternalActualCategorySummary;
 import com.example.budget.security.TenantSession;
 import com.example.budget.mapper.OrganizationMapper;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,8 @@ public class TransactionService {
 
     public List<Transaction> findByMonth(int year, int month) {
         YearMonth ym = YearMonth.of(year, month);
-        return transactionMapper.findByDateRange(ym.atDay(1), ym.atEndOfMonth(), TenantSession.tenantId());
+        return transactionMapper.findByDateRange(ym.atDay(1), ym.atEndOfMonth(), TenantSession.tenantId()).stream()
+                .filter(t -> TenantSession.canAccess(t.getDepartmentId(), t.getProjectId())).toList();
     }
 
     public List<Transaction> findByCategory(Long categoryId) {
@@ -83,8 +85,13 @@ public class TransactionService {
     }
 
     public BigDecimal getTotalExpense(LocalDate start, LocalDate end) {
-        if (TenantSession.isScopeLimited()) return findByDateRange(start, end).stream().filter(t -> "EXPENSE".equals(t.getType())).map(Transaction::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-        return transactionMapper.sumByTypeAndDateRange("EXPENSE", start, end, TenantSession.tenantId());
+        BigDecimal manual = TenantSession.isScopeLimited()
+                ? findByDateRange(start, end).stream().filter(t -> "EXPENSE".equals(t.getType())).map(Transaction::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add)
+                : transactionMapper.sumByTypeAndDateRange("EXPENSE", start, end, TenantSession.tenantId());
+        BigDecimal imported = TenantSession.isScopeLimited()
+                ? visibleActuals(start, end, null, null).stream().map(ExternalActualCategorySummary::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add)
+                : transactionMapper.sumImportedActuals(start, end, TenantSession.tenantId());
+        return manual.add(imported);
     }
 
     public BigDecimal getBalance(LocalDate start, LocalDate end) {
@@ -92,27 +99,43 @@ public class TransactionService {
     }
 
     public List<Map<String, Object>> getExpenseSummaryByCategory(LocalDate start, LocalDate end) {
-        if (TenantSession.isScopeLimited()) return findByDateRange(start, end).stream().filter(t -> "EXPENSE".equals(t.getType()))
+        List<Map<String, Object>> manual;
+        if (TenantSession.isScopeLimited()) manual = findByDateRange(start, end).stream().filter(t -> "EXPENSE".equals(t.getType()))
                 .collect(java.util.stream.Collectors.groupingBy(t -> t.getCategoryName() == null ? "未分類" : t.getCategoryName(), java.util.stream.Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)))
                 .entrySet().stream().map(e -> Map.<String,Object>of("category", e.getKey(), "total", e.getValue())).toList();
-        return transactionMapper.expenseSummaryByCategory(start, end, TenantSession.tenantId());
+        else manual = transactionMapper.expenseSummaryByCategory(start, end, TenantSession.tenantId());
+        Map<String, BigDecimal> combined = new java.util.LinkedHashMap<>();
+        manual.forEach(row -> combined.put(String.valueOf(row.get("category")), (BigDecimal) row.get("total")));
+        visibleActuals(start, end, null, null).forEach(row -> combined.merge(
+                row.getCategoryName() == null ? "未分類" : row.getCategoryName(), row.getAmount(), BigDecimal::add));
+        return combined.entrySet().stream().map(e -> Map.<String, Object>of("category", e.getKey(), "total", e.getValue())).toList();
     }
 
     public List<CategoryExpenseSummary> getExpenseSummaryByCategoryIncludingEmpty(LocalDate start, LocalDate end) {
         if (TenantSession.isScopeLimited()) {
             Map<Long, BigDecimal> actualByCategory = findByDateRange(start, end).stream().filter(t -> "EXPENSE".equals(t.getType()) && t.getCategoryId() != null)
                     .collect(java.util.stream.Collectors.groupingBy(Transaction::getCategoryId, java.util.stream.Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
+            visibleActuals(start, end, null, null).stream().filter(row -> row.getCategoryId() != null)
+                    .forEach(row -> actualByCategory.merge(row.getCategoryId(), row.getAmount(), BigDecimal::add));
             return categoryService.findByType("EXPENSE").stream().map(category -> {
                 CategoryExpenseSummary summary = new CategoryExpenseSummary(); summary.setCategoryId(category.getId()); summary.setCategoryName(category.getName());
                 summary.setActual(actualByCategory.getOrDefault(category.getId(), BigDecimal.ZERO)); return summary;
             }).toList();
         }
-        return transactionMapper.expenseSummaryByCategoryIncludingEmpty(start, end, TenantSession.tenantId());
+        List<CategoryExpenseSummary> summaries = transactionMapper.expenseSummaryByCategoryIncludingEmpty(start, end, TenantSession.tenantId());
+        Map<Long, CategoryExpenseSummary> byCategory = summaries.stream().collect(java.util.stream.Collectors.toMap(
+                CategoryExpenseSummary::getCategoryId, summary -> summary));
+        visibleActuals(start, end, null, null).stream().filter(row -> row.getCategoryId() != null).forEach(row -> {
+            CategoryExpenseSummary summary = byCategory.get(row.getCategoryId());
+            if (summary != null) summary.setActual(summary.getActual().add(row.getAmount()));
+        });
+        return summaries;
     }
 
     public List<CategoryExpenseSummary> getExpenseSummaryByCategoryAndScope(LocalDate start, LocalDate end,
                                                                             Long departmentId, Long projectId) {
-        if (TenantSession.isScopeLimited()) return findByDateRange(start, end).stream().filter(t -> "EXPENSE".equals(t.getType()) && t.getCategoryId() != null)
+        List<CategoryExpenseSummary> manual;
+        if (TenantSession.isScopeLimited()) manual = findByDateRange(start, end).stream().filter(t -> "EXPENSE".equals(t.getType()) && t.getCategoryId() != null)
                 .filter(t -> departmentId == null || departmentId.equals(t.getDepartmentId()))
                 .filter(t -> projectId == null || projectId.equals(t.getProjectId()))
                 .collect(java.util.stream.Collectors.groupingBy(Transaction::getCategoryId,
@@ -121,12 +144,49 @@ public class TransactionService {
                 .entrySet().stream().map(entry -> { CategoryExpenseSummary summary = new CategoryExpenseSummary(); summary.setCategoryId(entry.getKey());
                     var nameAndAmount = entry.getValue().entrySet().stream().findFirst(); summary.setCategoryName(nameAndAmount.map(Map.Entry::getKey).orElse("未分類"));
                     summary.setActual(nameAndAmount.map(Map.Entry::getValue).orElse(BigDecimal.ZERO)); return summary; }).toList();
-        return transactionMapper.expenseSummaryByCategoryAndScope(start, end, departmentId, projectId, TenantSession.tenantId());
+        else manual = transactionMapper.expenseSummaryByCategoryAndScope(start, end, departmentId, projectId, TenantSession.tenantId());
+        Map<Long, CategoryExpenseSummary> combined = manual.stream().collect(java.util.stream.Collectors.toMap(
+                CategoryExpenseSummary::getCategoryId, summary -> summary, (first, ignored) -> first, java.util.LinkedHashMap::new));
+        visibleActuals(start, end, departmentId, projectId).forEach(row -> {
+            CategoryExpenseSummary summary = combined.get(row.getCategoryId());
+            if (summary == null) {
+                summary = new CategoryExpenseSummary();
+                summary.setCategoryId(row.getCategoryId());
+                summary.setCategoryName(row.getCategoryName());
+                summary.setActual(BigDecimal.ZERO);
+                combined.put(row.getCategoryId(), summary);
+            }
+            summary.setActual(summary.getActual().add(row.getAmount()));
+        });
+        return List.copyOf(combined.values());
     }
 
     public BigDecimal getSpentByCategoryAndMonth(Long categoryId, int year, int month,
                                                  Long departmentId, Long projectId) {
-        return transactionMapper.sumExpenseByCategoryAndMonth(categoryId, year, month, departmentId, projectId, TenantSession.tenantId());
+        if (TenantSession.isScopeLimited()) {
+            YearMonth monthRange = YearMonth.of(year, month);
+            return findByDateRange(monthRange.atDay(1), monthRange.atEndOfMonth()).stream()
+                    .filter(t -> "EXPENSE".equals(t.getType()))
+                    .filter(t -> categoryId.equals(t.getCategoryId()))
+                    .filter(t -> java.util.Objects.equals(departmentId, t.getDepartmentId()))
+                    .filter(t -> java.util.Objects.equals(projectId, t.getProjectId()))
+                    .map(Transaction::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .add(visibleActuals(monthRange.atDay(1), monthRange.atEndOfMonth(), departmentId, projectId).stream()
+                            .filter(row -> categoryId.equals(row.getCategoryId())).map(ExternalActualCategorySummary::getAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add));
+        }
+        YearMonth monthRange = YearMonth.of(year, month);
+        return transactionMapper.sumExpenseByCategoryAndMonth(categoryId, year, month, departmentId, projectId, TenantSession.tenantId())
+                .add(transactionMapper.sumImportedActualsByCategory(TenantSession.tenantId(), categoryId,
+                        monthRange.atDay(1), monthRange.atEndOfMonth(), departmentId, projectId));
+    }
+
+    private List<ExternalActualCategorySummary> visibleActuals(LocalDate start, LocalDate end, Long departmentId, Long projectId) {
+        List<ExternalActualCategorySummary> imported = transactionMapper.summarizeImportedActuals(TenantSession.tenantId(), start, end, departmentId, projectId);
+        if (imported == null) return List.of();
+        return imported.stream()
+                .filter(row -> !TenantSession.isScopeLimited() || TenantSession.canAccess(row.getDepartmentId(), row.getProjectId()))
+                .toList();
     }
 
     private void validateDimensions(Transaction transaction) {

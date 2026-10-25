@@ -46,40 +46,12 @@ public class BudgetService {
         return budgets.stream().filter(b -> TenantSession.canAccess(b.getDepartmentId(), b.getProjectId())).toList();
     }
 
-    public Budget findByCategoryAndYearMonth(Long categoryId, int year, int month) {
-        Budget budget = budgetMapper.findByCategoryAndYearMonth(categoryId, year, month, TenantSession.tenantId());
-        if (budget != null) {
-            fillSpent(budget);
-        }
-        return budget != null && TenantSession.canAccess(budget.getDepartmentId(), budget.getProjectId()) ? budget : null;
-    }
-
     @Transactional
     public Budget create(Budget budget) {
         validateDimensions(budget);
         budgetMapper.insert(budget);
         auditService.record("CREATE", "BUDGET", budget.getId(), budget.getYear() + "年" + budget.getMonth() + "月の予算を登録");
         return findById(budget.getId());
-    }
-
-    @Transactional
-    public Budget update(Budget budget) {
-        Budget existing = budgetMapper.findById(budget.getId(), TenantSession.tenantId());
-        if (existing == null) throw new IllegalArgumentException("予算が見つかりません。");
-        TenantSession.requireScope(existing.getDepartmentId(), existing.getProjectId());
-        validateDimensions(budget);
-        budgetMapper.update(budget);
-        auditService.record("UPDATE", "BUDGET", budget.getId(), "予算を更新");
-        return findById(budget.getId());
-    }
-
-    @Transactional
-    public void delete(Long id) {
-        Budget existing = budgetMapper.findById(id, TenantSession.tenantId());
-        if (existing == null) throw new IllegalArgumentException("予算が見つかりません。");
-        TenantSession.requireScope(existing.getDepartmentId(), existing.getProjectId());
-        budgetMapper.delete(id, TenantSession.tenantId());
-        auditService.record("DELETE", "BUDGET", id, "予算を削除");
     }
 
     private void fillSpent(Budget budget) {

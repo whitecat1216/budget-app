@@ -90,7 +90,7 @@
                             <th class="text-end">予算</th>
                             <th class="text-end">使用額</th>
                             <th class="text-end">残額</th>
-                            <th style="width:30%">進捗</th>
+                            <th class="budget-progress-heading">進捗</th>
                             <th></th>
                         </tr>
                         </thead>
@@ -109,7 +109,7 @@
                                 <div class="progress">
                                     <div class="progress-bar"
                                          th:classappend="${b.spent.compareTo(b.amount) > 0} ? 'bg-danger' : 'bg-success'"
-                                         th:style="'width:' + ${b.amount.compareTo(T(java.math.BigDecimal).ZERO) == 0 ? 0 : T(java.lang.Math).min(100, b.spent.doubleValue() / b.amount.doubleValue() * 100)} + '%'"
+                                         th:style="|--progress-width: ${b.amount.compareTo(T(java.math.BigDecimal).ZERO) == 0 ? 0 : T(java.lang.Math).min(100, b.spent.doubleValue() / b.amount.doubleValue() * 100)}%|"
                                          role="progressbar" th:aria-valuenow="${b.amount.compareTo(T(java.math.BigDecimal).ZERO) == 0 ? 0 : T(java.lang.Math).min(100, b.spent.doubleValue() / b.amount.doubleValue() * 100)}" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                             </td>

@@ -74,7 +74,7 @@
                     <th class="text-end">予算</th>
                     <th class="text-end">実績</th>
                     <th class="text-end">残額</th>
-                    <th style="min-width: 180px">執行率</th>
+                    <th class="report-progress-heading">執行率</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -92,7 +92,7 @@
                             <div class="progress flex-grow-1">
                                 <div class="progress-bar"
                                      th:classappend="${row.overBudget} ? 'bg-danger' : 'bg-primary'"
-                                     th:style="'width:' + ${row.progressWidth} + '%'"></div>
+                                     th:style="|--progress-width: ${row.progressWidth}%|"></div>
                             </div>
                             <span class="small text-nowrap"
                                   th:text="${row.executionRate == null ? '—' : #numbers.formatDecimal(row.executionRate, 1, 'COMMA', 1, 'POINT') + '%'}">—</span>

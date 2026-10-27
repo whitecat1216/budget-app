@@ -2,8 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org"><head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>企業登録 | NEXUS</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>body{background:#f4f6fa;color:#17243b}.auth-card{max-width:560px;margin:5vh auto;border:1px solid #e8ecf2;border-radius:14px;box-shadow:0 12px 40px #18274b12}.brand{color:#14243f;font-weight:800;letter-spacing:.1em}.form-control{min-height:42px}</style>
-</head><body><main class="card auth-card"><div class="card-body p-4 p-md-5">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head><body><main class="card auth-card register"><div class="card-body p-4 p-md-5">
     <div class="brand mb-4">NEXUS <span class="text-muted fs-6">企業登録</span></div><h1 class="h4 mb-1">企業アカウントを作成</h1><p class="text-muted small mb-4">登録後、メール認証を行うと利用を開始できます。</p>
     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
     <form th:action="@{/register}" method="post" th:object="${registrationForm}">

@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Mapper
 public interface RegistrationMapper {
-    @Insert("INSERT INTO tenants (name, status) VALUES (#{companyName}, 'PENDING_VERIFICATION')")
+    @Insert("INSERT INTO tenants (name, status, setup_completed) VALUES (#{companyName}, 'PENDING_VERIFICATION', FALSE)")
     @Options(useGeneratedKeys = true, keyProperty = "tenantId")
     int insertTenantKey(RegistrationService.TenantKey key);
 

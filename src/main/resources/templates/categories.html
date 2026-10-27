@@ -60,9 +60,8 @@
                         <tbody>
                         <tr th:each="c : ${categories}">
                             <td>
-                                <span class="d-inline-block rounded-circle"
-                                      style="width:16px;height:16px;"
-                                      th:style="'background-color:' + ${c.color}"></span>
+                                <span class="d-inline-block rounded-circle category-color-chip"
+                                      th:style="|--chip-color: ${c.color}|"></span>
                             </td>
                             <td th:text="${c.name}">食費</td>
                             <td>

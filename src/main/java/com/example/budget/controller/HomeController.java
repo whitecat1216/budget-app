@@ -2,6 +2,8 @@ package com.example.budget.controller;
 
 import com.example.budget.service.BudgetService;
 import com.example.budget.service.TransactionService;
+import com.example.budget.service.OnboardingService;
+import com.example.budget.security.TenantSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,12 +20,17 @@ public class HomeController {
 
     private final TransactionService transactionService;
     private final BudgetService budgetService;
+    private final OnboardingService onboardingService;
 
     @GetMapping("/")
     public String dashboard(
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month,
             Model model) {
+
+        if ("TENANT_ADMIN".equals(TenantSession.currentUser().getRole()) && !onboardingService.isComplete()) {
+            return "redirect:/onboarding";
+        }
 
         YearMonth current = YearMonth.now();
         int y = year != null ? year : current.getYear();

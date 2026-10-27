@@ -78,7 +78,7 @@
                     <div class="progress mt-3">
                         <div class="progress-bar"
                              th:classappend="${budgetExceeded} ? 'bg-danger' : 'bg-primary'"
-                             th:style="'width:' + ${budgetProgressWidth} + '%'"></div>
+                             th:style="|--progress-width: ${budgetProgressWidth}%|"></div>
                     </div>
                     <div class="small text-muted mt-2"
                          th:text="'予算 ¥' + ${#numbers.formatDecimal(totalBudget, 1, 'COMMA', 0, 'POINT')}">予算 ¥0</div>
@@ -104,7 +104,7 @@
                         <span class="chart-label text-truncate" th:text="${row.categoryName}">食費</span>
                         <div class="chart-track" role="img"
                              th:aria-label="${row.categoryName + ' ' + #numbers.formatDecimal(row.actual, 1, 'COMMA', 0, 'POINT') + '円'}">
-                            <div class="chart-bar" th:style="'width:' + ${row.progressWidth} + '%'"></div>
+                            <div class="chart-bar" th:style="|--progress-width: ${row.progressWidth}%|"></div>
                         </div>
                         <span class="chart-value"
                               th:text="'¥' + ${#numbers.formatDecimal(row.actual, 1, 'COMMA', 0, 'POINT')}">¥0</span>
@@ -138,7 +138,7 @@
                         <div class="progress">
                             <div class="progress-bar"
                                  th:classappend="${b.spent.compareTo(b.amount) > 0} ? 'bg-danger' : 'bg-primary'"
-                                 th:style="'width:' + ${b.amount.signum() == 0 ? (b.spent.signum() > 0 ? 100 : 0) : (b.spent.doubleValue() / b.amount.doubleValue() * 100)} + '%'"></div>
+                                 th:style="|--progress-width: ${b.amount.signum() == 0 ? (b.spent.signum() > 0 ? 100 : 0) : (b.spent.doubleValue() / b.amount.doubleValue() * 100)}%|"></div>
                         </div>
                     </div>
                 </div>

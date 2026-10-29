@@ -22,10 +22,12 @@
             <a class="nav-link" href="/budget-change-requests" th:classappend="${activeNav == 'budget-changes'} ? 'active'"><i class="bi bi-arrow-left-right"></i><span>予算変更申請</span></a>
             <a class="nav-link" href="/reports/budget-vs-actual" th:classappend="${activeNav == 'reports'} ? 'active'"><i class="bi bi-bar-chart-line"></i><span>予実レポート</span></a>
             <a class="nav-link" href="/requests" th:classappend="${activeNav == 'requests'} ? 'active'"><i class="bi bi-check2-square"></i><span>申請・承認</span></a>
+            <a class="nav-link" href="/notifications" th:classappend="${activeNav == 'notifications'} ? 'active'"><i class="bi bi-bell"></i><span>通知</span></a>
             <a class="nav-link" href="/organization" th:classappend="${activeNav == 'organization'} ? 'active'"><i class="bi bi-diagram-3"></i><span>部門・プロジェクト</span></a>
             <div class="nav-section">データ管理</div>
             <a class="nav-link" href="/transactions" th:classappend="${activeNav == 'transactions'} ? 'active'"><i class="bi bi-receipt"></i><span>取引</span></a>
             <a class="nav-link" href="/categories" th:classappend="${activeNav == 'categories'} ? 'active'"><i class="bi bi-tags"></i><span>カテゴリ</span></a>
+            <a class="nav-link" href="/account-codes" th:classappend="${activeNav == 'account-codes'} ? 'active'"><i class="bi bi-list-ol"></i><span>勘定科目</span></a>
             <a class="nav-link" href="/accounting" th:classappend="${activeNav == 'accounting'} ? 'active'"><i class="bi bi-arrow-repeat"></i><span>会計連携</span></a>
             <a class="nav-link" href="/audit-logs" th:classappend="${activeNav == 'audit'} ? 'active'"><i class="bi bi-clock-history"></i><span>監査ログ</span></a>
             <a class="nav-link" href="/team" th:classappend="${activeNav == 'team'} ? 'active'"><i class="bi bi-people"></i><span>ユーザー・権限</span></a>

@@ -11,6 +11,9 @@ public interface AuditMapper {
                @Param("action") String action, @Param("entityType") String entityType,
                @Param("entityId") String entityId, @Param("details") String details);
 
-    @Select("SELECT l.id, l.actor_id, u.display_name AS actor_name, l.action, l.entity_type, l.entity_id, l.details, l.created_at FROM audit_logs l LEFT JOIN users u ON u.id = l.actor_id AND u.tenant_id = l.tenant_id WHERE l.tenant_id = #{tenantId} ORDER BY l.created_at DESC, l.id DESC LIMIT 200")
+    @Select("SELECT l.id, l.actor_id, u.display_name AS actor_name, l.action, l.entity_type, l.entity_id, l.details, " +
+            "TO_CHAR(l.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at FROM audit_logs l " +
+            "LEFT JOIN users u ON u.id = l.actor_id AND u.tenant_id = l.tenant_id " +
+            "WHERE l.tenant_id = #{tenantId} ORDER BY l.created_at DESC, l.id DESC LIMIT 200")
     List<Map<String, Object>> findRecent(@Param("tenantId") long tenantId);
 }

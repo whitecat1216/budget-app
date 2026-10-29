@@ -16,6 +16,7 @@ public class SpendingRequestService {
     private final OrganizationMapper organizationMapper;
     private final CategoryService categoryService;
     private final AuditService auditService;
+    private final NotificationService notificationService;
 
     public List<SpendingRequest> list() {
         var user = TenantSession.currentUser();
@@ -43,6 +44,8 @@ public class SpendingRequestService {
         if (mapper.submit(id, user.getTenantId(), user.getId()) != 1) throw new IllegalStateException("提出できる状態の申請ではありません。");
         mapper.insertHistory(user.getTenantId(), id, user.getId(), "SUBMITTED", null);
         auditService.record("SUBMIT", "SPENDING_REQUEST", id, "支出申請を提出");
+        notificationService.notifyReviewers(user.getTenantId(), user.getId(), current.getDepartmentId(),
+                current.getProjectId(), id, current.getTitle());
     }
 
     @Transactional
@@ -60,6 +63,7 @@ public class SpendingRequestService {
         if (updated != 1) throw new IllegalStateException("他の操作で状態が変わったか、承認対象ではありません。");
         mapper.insertHistory(user.getTenantId(), id, user.getId(), action, comment);
         auditService.record(action, "SPENDING_REQUEST", id, "支出申請を" + action + "");
+        notificationService.notifyRequester(user.getTenantId(), request.getRequesterId(), id, request.getTitle(), action);
     }
 
     public List<java.util.Map<String,Object>> history(long id) {

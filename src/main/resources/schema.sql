@@ -121,6 +121,19 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant_created ON audit_logs (tenant_id, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGSERIAL PRIMARY KEY,
+    tenant_id BIGINT NOT NULL REFERENCES tenants(id),
+    recipient_id BIGINT NOT NULL REFERENCES users(id),
+    type VARCHAR(40) NOT NULL,
+    title VARCHAR(180) NOT NULL,
+    message VARCHAR(500) NOT NULL,
+    target_url VARCHAR(300) NOT NULL,
+    read_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_inbox ON notifications (tenant_id, recipient_id, created_at DESC, id DESC);
+
 CREATE TABLE IF NOT EXISTS budget_change_requests (
     id BIGSERIAL PRIMARY KEY,
     tenant_id BIGINT NOT NULL REFERENCES tenants(id),
@@ -235,6 +248,22 @@ FROM (VALUES
 ) AS seed(name, type, color, icon)
 WHERE NOT EXISTS (SELECT 1 FROM categories c WHERE c.tenant_id = 1 AND c.name = seed.name AND c.type = seed.type);
 
+CREATE TABLE IF NOT EXISTS account_codes (
+    id BIGSERIAL PRIMARY KEY,
+    tenant_id BIGINT NOT NULL REFERENCES tenants(id),
+    code VARCHAR(40) NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('INCOME', 'EXPENSE')),
+    category_id BIGINT,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (tenant_id, code),
+    UNIQUE (tenant_id, id)
+);
+CREATE INDEX IF NOT EXISTS idx_account_codes_tenant_active ON account_codes (tenant_id, active, code);
+
+
 -- Transactions
 CREATE TABLE IF NOT EXISTS transactions (
     id               BIGSERIAL PRIMARY KEY,
@@ -282,3 +311,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_dimension_unique ON budgets
     (tenant_id, category_id, year, month, COALESCE(department_id, 0), COALESCE(project_id, 0));
 
 CREATE INDEX IF NOT EXISTS idx_budgets_year_month ON budgets(year, month);
+
+-- Tenant-scoped candidate keys let PostgreSQL reject cross-tenant references at the database boundary.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_categories_tenant_id ON categories (tenant_id, id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_departments_tenant_id ON departments (tenant_id, id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_projects_tenant_id ON projects (tenant_id, id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_tenant_id ON users (tenant_id, id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_connections_tenant_id ON accounting_connections (tenant_id, id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_spending_requests_tenant_id ON spending_requests (tenant_id, id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_budgets_tenant_id ON budgets (tenant_id, id);

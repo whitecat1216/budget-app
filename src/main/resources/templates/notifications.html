@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head><title>通知 | NEXUS</title></head><body><div th:fragment="content">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div><h1 class="page-heading mb-0">通知</h1><p class="page-subtitle mb-0">申請や承認に関するお知らせです。未読 <span th:text="${unreadCount}">0</span> 件</p></div>
+        <form th:if="${unreadCount > 0}" th:action="@{/notifications/read-all}" method="post"><button class="btn btn-outline-secondary" type="submit">すべて既読にする</button></form>
+    </div>
+    <div class="d-flex flex-column gap-3">
+        <article class="card" th:each="item : ${notifications}" th:classappend="${item['read_at'] == null} ? 'border-primary' : ''">
+            <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div class="d-flex gap-3"><span class="text-primary fs-4"><i class="bi" th:classappend="${item['type'] == 'APPROVAL_REQUIRED'} ? 'bi-check2-square' : 'bi-chat-left-text'"></i></span>
+                    <div><div class="fw-semibold" th:text="${item['title']}">通知タイトル</div><div class="mt-1" th:text="${item['message']}">通知内容</div><div class="small text-muted mt-2" th:text="${item['created_at']}">日時</div></div>
+                </div>
+                <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-primary" th:href="${item['target_url']}">関連画面へ</a><form th:if="${item['read_at'] == null}" th:action="@{/notifications/{id}/read(id=${item['id']})}" method="post"><button class="btn btn-sm btn-outline-secondary" type="submit">既読</button></form></div>
+            </div>
+        </article>
+        <div th:if="${#lists.isEmpty(notifications)}" class="card"><div class="card-body text-center text-muted py-5">通知はありません。</div></div>
+    </div>
+</div></body></html>

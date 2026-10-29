@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head><title>勘定科目 | 予算管理</title></head>
+<body>
+<div th:fragment="content">
+    <div class="mb-4">
+        <h1 class="page-heading mb-0">勘定科目マスタ</h1>
+        <p class="page-subtitle mb-0">企業ごとの科目コードを管理し、社内カテゴリとの対応を設定します。会計サービス連携先が未確定でも登録できます。</p>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card"><div class="card-header bg-white fw-semibold">科目を追加</div><div class="card-body">
+                <form th:action="@{/account-codes}" method="post" th:object="${accountCode}">
+                    <div class="mb-3"><label class="form-label">科目コード</label><input class="form-control" th:field="*{code}" maxlength="40" required></div>
+                    <div class="mb-3"><label class="form-label">科目名</label><input class="form-control" th:field="*{name}" maxlength="120" required></div>
+                    <div class="mb-3"><label class="form-label">種類</label><select class="form-select" th:field="*{type}" required><option value="EXPENSE">費用</option><option value="INCOME">収益</option></select></div>
+                    <div class="mb-3"><label class="form-label">社内カテゴリ（任意）</label><select class="form-select" th:field="*{categoryId}"><option value="">未設定</option><option th:each="c : ${categories}" th:value="${c.id}" th:text="${(c.type == 'INCOME' ? '収益 / ' : '費用 / ') + c.name}"></option></select><div class="form-text">科目の種類と一致するカテゴリを選んでください。</div></div>
+                    <button class="btn btn-primary w-100" type="submit">登録</button>
+                </form>
+            </div></div>
+        </div>
+        <div class="col-lg-8"><div class="card"><div class="card-header bg-white fw-semibold">登録済み科目</div><div class="table-responsive"><table class="table table-hover mb-0">
+            <thead><tr><th>コード</th><th>科目名</th><th>種類</th><th>社内カテゴリ</th><th>状態</th><th></th></tr></thead>
+            <tbody><tr th:each="item : ${accountCodes}"><td th:text="${item.code}"></td><td th:text="${item.name}"></td><td th:text="${item.type == 'INCOME' ? '収益' : '費用'}"></td><td th:text="${item.categoryName ?: '未設定'}"></td><td><span class="badge" th:classappend="${item.active} ? 'bg-success' : 'bg-secondary'" th:text="${item.active} ? '有効' : '停止中'"></span></td><td class="text-end"><form th:action="@{/account-codes/{id}/toggle(id=${item.id})}" method="post"><button class="btn btn-sm btn-outline-secondary" type="submit" th:text="${item.active} ? '停止' : '有効化'"></button></form></td></tr>
+            <tr th:if="${#lists.isEmpty(accountCodes)}"><td colspan="6" class="text-center text-muted py-4">勘定科目はまだ登録されていません。</td></tr></tbody>
+        </table></div></div></div>
+    </div>
+</div>
+</body></html>

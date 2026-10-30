@@ -17,10 +17,16 @@ public class AppUserPrincipal implements UserDetails {
     private final String password;
     private final String role;
     private final int authVersion;
+    private final boolean mfaEnabled;
     private Set<Long> departmentScopes = Set.of();
     private Set<Long> projectScopes = Set.of();
 
     public AppUserPrincipal(Long id, Long tenantId, String email, String displayName, String password, String role, Integer authVersion) {
+        this(id, tenantId, email, displayName, password, role, authVersion, false);
+    }
+
+    public AppUserPrincipal(Long id, Long tenantId, String email, String displayName, String password,
+                            String role, Integer authVersion, Boolean mfaEnabled) {
         this.id = id;
         this.tenantId = tenantId;
         this.email = email;
@@ -28,6 +34,7 @@ public class AppUserPrincipal implements UserDetails {
         this.password = password;
         this.role = role;
         this.authVersion = authVersion == null ? 0 : authVersion;
+        this.mfaEnabled = Boolean.TRUE.equals(mfaEnabled);
     }
 
     @Override public Collection<? extends GrantedAuthority> getAuthorities() { return List.of(new SimpleGrantedAuthority("ROLE_" + role)); }

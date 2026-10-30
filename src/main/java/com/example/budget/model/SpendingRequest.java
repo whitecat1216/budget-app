@@ -23,5 +23,10 @@ public class SpendingRequest {
     @NotNull @DecimalMin("0.01") @Digits(integer = 10, fraction = 2) private BigDecimal amount;
     private LocalDate requestedDate;
     private String status;
+    private int approvalRound;
+    private int currentApprovalStep;
+    private int approvalStepCount;
+    private String currentApprovalRole;
+    private boolean canReview;
     private LocalDateTime createdAt;
 }

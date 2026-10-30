@@ -56,10 +56,14 @@ CREATE TABLE IF NOT EXISTS users (
     role        VARCHAR(30) NOT NULL DEFAULT 'MEMBER',
     enabled     BOOLEAN NOT NULL DEFAULT FALSE,
     auth_version INTEGER NOT NULL DEFAULT 0,
+    mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    mfa_secret_ciphertext TEXT,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (tenant_id, email)
 );
 ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_version INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_secret_ciphertext TEXT;
 
 CREATE TABLE IF NOT EXISTS email_verifications (
     id          BIGSERIAL PRIMARY KEY,
@@ -95,9 +99,40 @@ CREATE TABLE IF NOT EXISTS spending_requests (
     amount      NUMERIC(12,2) NOT NULL CHECK (amount > 0),
     requested_date DATE NOT NULL,
     status      VARCHAR(24) NOT NULL DEFAULT 'DRAFT',
+    approval_round INTEGER NOT NULL DEFAULT 0,
+    current_approval_step INTEGER NOT NULL DEFAULT 0,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE spending_requests ADD COLUMN IF NOT EXISTS approval_round INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE spending_requests ADD COLUMN IF NOT EXISTS current_approval_step INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS approval_policies (
+    id BIGSERIAL PRIMARY KEY,
+    tenant_id BIGINT NOT NULL REFERENCES tenants(id),
+    policy_name VARCHAR(120) NOT NULL,
+    min_amount NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (min_amount >= 0),
+    max_amount NUMERIC(12,2),
+    approval_roles VARCHAR(400) NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (max_amount IS NULL OR max_amount > min_amount),
+    UNIQUE (tenant_id, policy_name)
+);
+
+CREATE TABLE IF NOT EXISTS spending_request_approvals (
+    id BIGSERIAL PRIMARY KEY,
+    tenant_id BIGINT NOT NULL REFERENCES tenants(id),
+    request_id BIGINT NOT NULL REFERENCES spending_requests(id) ON DELETE CASCADE,
+    approval_round INTEGER NOT NULL,
+    step_number INTEGER NOT NULL,
+    required_role VARCHAR(30) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','APPROVED','SKIPPED')),
+    reviewer_id BIGINT REFERENCES users(id),
+    reviewed_at TIMESTAMP,
+    UNIQUE (tenant_id, request_id, approval_round, step_number)
+);
+CREATE INDEX IF NOT EXISTS idx_request_approvals_pending ON spending_request_approvals (tenant_id, request_id, approval_round, status, step_number);
 
 CREATE TABLE IF NOT EXISTS approval_history (
     id          BIGSERIAL PRIMARY KEY,

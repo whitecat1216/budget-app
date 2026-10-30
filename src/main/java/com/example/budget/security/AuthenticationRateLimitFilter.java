@@ -28,6 +28,7 @@ public class AuthenticationRateLimitFilter extends OncePerRequestFilter {
             case "/register" -> { max = 5; window = Duration.ofHours(1).toMillis(); }
             case "/forgot-password" -> { max = 5; window = Duration.ofHours(1).toMillis(); }
             case "/reset-password" -> { max = 10; window = Duration.ofHours(1).toMillis(); }
+            case "/mfa/challenge", "/mfa/confirm", "/mfa/disable" -> { max = 8; window = Duration.ofMinutes(10).toMillis(); }
             case "/team/invite" -> { max = 10; window = Duration.ofHours(1).toMillis(); }
             default -> { chain.doFilter(request, response); return; }
         }

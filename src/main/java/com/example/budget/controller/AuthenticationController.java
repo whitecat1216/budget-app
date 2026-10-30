@@ -20,11 +20,15 @@ public class AuthenticationController {
     public String login(@RequestParam(required = false) String error,
                         @RequestParam(required = false) String verified,
                         @RequestParam(required = false) String verificationError,
-                        @RequestParam(required = false) String sessionExpired, Model model) {
+                        @RequestParam(required = false) String sessionExpired,
+                        @RequestParam(required = false) String mfaEnabled,
+                        @RequestParam(required = false) String mfaDisabled, Model model) {
         if (error != null) model.addAttribute("errorMessage", "メールアドレスまたはパスワードを確認してください。");
         if (verified != null) model.addAttribute("successMessage", "メール認証が完了しました。ログインしてください。");
         if (verificationError != null) model.addAttribute("errorMessage", "認証リンクが無効か、有効期限が切れています。登録をやり直してください。");
         if (sessionExpired != null) model.addAttribute("errorMessage", "ユーザー権限が変更されたため、もう一度ログインしてください。");
+        if (mfaEnabled != null) model.addAttribute("successMessage", "多要素認証を有効にしました。もう一度ログインしてください。");
+        if (mfaDisabled != null) model.addAttribute("successMessage", "多要素認証を解除しました。もう一度ログインしてください。");
         return "login";
     }
 

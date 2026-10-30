@@ -17,6 +17,7 @@ Java + Spring Boot + MyBatis + PostgreSQL で作ったシンプルな予算管�
 - **カテゴリ管理**: 収入/支出カテゴリの追加・削除（初期データ付き）
 - **勘定科目管理**: 企業別科目コード、収益/費用区分、社内カテゴリ対応、有効/停止
 - **アプリ内通知**: 支出申請の確認依頼と処理結果、通知の既読管理
+- **多要素認証**: TOTP認証アプリに対応した任意設定。秘密鍵はAES-GCMで暗号化して保存
 
 ## 技術スタック
 
@@ -54,6 +55,7 @@ docker compose up --build
 企業登録にはSMTP設定が必要です。Docker Compose起動前に`.env`を作成し、メール事業者の設定を記入してください。
 
 ```dotenv
+MFA_ENCRYPTION_KEY=<32バイト鍵をBase64エンコードした値>
 SPRING_MAIL_HOST=smtp.example.com
 SPRING_MAIL_PORT=587
 SPRING_MAIL_USERNAME=your-smtp-user
@@ -63,6 +65,7 @@ APP_PUBLIC_URL=http://localhost:8080
 ```
 
 SMTP未設定の状態ではメール確認リンクを送れないため、企業登録は完了しません。`APP_PUBLIC_URL`はメールに載せる公開URLに合わせてください。既存の初期テナントのデータにログインする場合は、初回起動時に一度だけ管理者を作れるよう、`BOOTSTRAP_ADMIN_EMAIL`と12文字以上の`BOOTSTRAP_ADMIN_PASSWORD`を設定します。認証後はユーザー・権限画面からメンバーを招待できます。
+MFAを利用する場合は、秘密鍵を安全なシークレット管理に保存し、32バイト鍵をBase64化した`MFA_ENCRYPTION_KEY`を設定してください。鍵を失うと登録済みMFAを検証できません。
 
 停止する場合:
 

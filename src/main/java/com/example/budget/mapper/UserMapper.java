@@ -65,7 +65,7 @@ public interface UserMapper {
     @Insert("INSERT INTO users (tenant_id, email, display_name, password_hash, role, enabled) VALUES (1, LOWER(#{email}), 'システム管理者', #{passwordHash}, 'TENANT_ADMIN', TRUE) ON CONFLICT (tenant_id, email) DO NOTHING")
     int createBootstrapAdmin(@Param("email") String email, @Param("passwordHash") String passwordHash);
 
-    @Select("SELECT id, tenant_id, email, display_name, password_hash AS password, role, auth_version FROM users WHERE LOWER(email) = #{email} AND enabled = TRUE")
+    @Select("SELECT id, tenant_id, email, display_name, password_hash AS password, role, auth_version, mfa_enabled FROM users WHERE LOWER(email) = #{email} AND enabled = TRUE")
     @ConstructorArgs({
             @Arg(column = "id", javaType = Long.class),
             @Arg(column = "tenant_id", javaType = Long.class),
@@ -73,12 +73,25 @@ public interface UserMapper {
             @Arg(column = "display_name", javaType = String.class),
             @Arg(column = "password", javaType = String.class),
             @Arg(column = "role", javaType = String.class),
-            @Arg(column = "auth_version", javaType = Integer.class)
+            @Arg(column = "auth_version", javaType = Integer.class),
+            @Arg(column = "mfa_enabled", javaType = Boolean.class)
     })
     AppUserPrincipal findEnabledByEmail(@Param("email") String email);
 
     @Select("SELECT COUNT(*)=1 FROM users WHERE id=#{id} AND tenant_id=#{tenantId} AND role=#{role} AND auth_version=#{authVersion} AND enabled=TRUE")
     boolean securityStateMatches(@Param("id") long id, @Param("tenantId") long tenantId, @Param("role") String role, @Param("authVersion") int authVersion);
+
+    @Select("SELECT mfa_enabled FROM users WHERE id=#{userId} AND tenant_id=#{tenantId}")
+    boolean mfaEnabled(@Param("tenantId") long tenantId, @Param("userId") long userId);
+
+    @Select("SELECT mfa_secret_ciphertext FROM users WHERE id=#{userId} AND tenant_id=#{tenantId} AND mfa_enabled=TRUE")
+    String mfaSecret(@Param("tenantId") long tenantId, @Param("userId") long userId);
+
+    @Update("UPDATE users SET mfa_enabled=TRUE, mfa_secret_ciphertext=#{ciphertext} WHERE id=#{userId} AND tenant_id=#{tenantId} AND enabled=TRUE")
+    int enableMfa(@Param("tenantId") long tenantId, @Param("userId") long userId, @Param("ciphertext") String ciphertext);
+
+    @Update("UPDATE users SET mfa_enabled=FALSE, mfa_secret_ciphertext=NULL WHERE id=#{userId} AND tenant_id=#{tenantId}")
+    int disableMfa(@Param("tenantId") long tenantId, @Param("userId") long userId);
 
     class PasswordResetTarget {
         private Long id; private Long tenantId;

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::content})}">
+<head><title>承認規程 | NEXUS</title></head><body><div th:fragment="content">
+    <div class="mb-4"><h1 class="page-heading mb-0">承認規程</h1><p class="page-subtitle mb-0">金額帯と順番に従って、支出申請の承認段階を設定します。</p></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <div class="alert alert-info">この企業の承認金額・経路は未設定です。初期値はありません。規程を有効にすると、範囲外の金額では申請を提出できません。利用可能なユーザーのロールと部門・プロジェクト範囲も確認してください。</div>
+    <div class="row g-4">
+        <div class="col-lg-4"><section class="card"><div class="card-header bg-white fw-semibold">規程を追加</div><div class="card-body">
+            <form th:action="@{/approval-policies}" method="post" th:object="${policy}">
+                <div class="mb-3"><label class="form-label">規程名</label><input class="form-control" th:field="*{policyName}" maxlength="120" required></div>
+                <div class="mb-3"><label class="form-label">金額下限（円）</label><input class="form-control" type="number" min="0" step="0.01" th:field="*{minAmount}" required></div>
+                <div class="mb-3"><label class="form-label">金額上限（円・未入力で上限なし）</label><input class="form-control" type="number" min="0.01" step="0.01" th:field="*{maxAmount}"></div>
+                <div class="mb-3"><label class="form-label">承認ロール（順番どおり、カンマ区切り）</label><input class="form-control" th:field="*{approvalRoles}" placeholder="DEPARTMENT_MANAGER,FINANCE_ADMIN" maxlength="400" required><div class="form-text">TENANT_ADMIN / FINANCE_ADMIN / APPROVER / DEPARTMENT_MANAGER / PROJECT_MANAGER</div></div>
+                <button class="btn btn-primary w-100" type="submit">追加して有効化</button>
+            </form>
+        </div></section></div>
+        <div class="col-lg-8"><section class="card"><div class="card-header bg-white fw-semibold">登録済み規程</div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>規程</th><th>金額範囲</th><th>承認順</th><th>状態</th><th></th></tr></thead><tbody>
+            <tr th:each="p : ${policies}"><td th:text="${p.policyName}"></td><td><span th:text="|¥${#numbers.formatDecimal(p.minAmount, 1, 'COMMA', 0, 'POINT')}以上|"></span><span th:if="${p.maxAmount != null}" th:text="| ¥${#numbers.formatDecimal(p.maxAmount, 1, 'COMMA', 0, 'POINT')}未満|"></span><span th:if="${p.maxAmount == null}">（上限なし）</span></td><td th:text="${#strings.replace(p.approvalRoles, ',', ' → ')}"></td><td><span class="badge" th:classappend="${p.enabled} ? 'text-bg-success' : 'text-bg-secondary'" th:text="${p.enabled} ? '有効' : '停止中'"></span></td><td class="text-end"><form th:action="@{/approval-policies/{id}/toggle(id=${p.id})}" method="post"><button class="btn btn-sm btn-outline-secondary" type="submit" th:text="${p.enabled} ? '停止' : '有効化'"></button></form></td></tr>
+            <tr th:if="${#lists.isEmpty(policies)}"><td colspan="5" class="text-center text-muted py-4">規程未設定です。現在は従来の単段承認で処理されます。</td></tr>
+        </tbody></table></div></section></div>
+    </div>
+</div></body></html>

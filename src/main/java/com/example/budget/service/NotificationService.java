@@ -27,8 +27,14 @@ public class NotificationService {
     @Transactional
     public void notifyReviewers(long tenantId, long requesterId, Long departmentId, Long projectId,
                                 long requestId, String requestTitle) {
+        notifyRoleReviewers(tenantId, requesterId, departmentId, projectId, requestId, requestTitle, "ANY_APPROVER");
+    }
+
+    @Transactional
+    public void notifyRoleReviewers(long tenantId, long requesterId, Long departmentId, Long projectId,
+                                    long requestId, String requestTitle, String requiredRole) {
         String shortTitle = requestTitle == null ? "支出申請" : requestTitle.substring(0, Math.min(requestTitle.length(), 120));
-        mapper.insertForReviewers(tenantId, requesterId, departmentId, projectId, "APPROVAL_REQUIRED",
+        mapper.insertForReviewers(tenantId, requesterId, departmentId, projectId, requiredRole, "APPROVAL_REQUIRED",
                 "支出申請の確認", "「" + shortTitle + "」の確認が必要です。", "/requests#request-" + requestId);
     }
 

@@ -41,6 +41,8 @@ app:
   bootstrap-admin:
     email: ${BOOTSTRAP_ADMIN_EMAIL:}
     password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+  security:
+    mfa-encryption-key: ${MFA_ENCRYPTION_KEY:}
 
 logging:
   level:

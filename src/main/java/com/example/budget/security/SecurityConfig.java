@@ -15,10 +15,15 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 public class SecurityConfig {
     private final AuthenticationRateLimitFilter rateLimitFilter;
     private final SessionAuthorizationRefreshFilter sessionAuthorizationRefreshFilter;
+    private final MfaGateFilter mfaGateFilter;
+    private final MfaAuthenticationSuccessHandler mfaAuthenticationSuccessHandler;
 
-    public SecurityConfig(AuthenticationRateLimitFilter rateLimitFilter, SessionAuthorizationRefreshFilter sessionAuthorizationRefreshFilter) {
+    public SecurityConfig(AuthenticationRateLimitFilter rateLimitFilter, SessionAuthorizationRefreshFilter sessionAuthorizationRefreshFilter,
+                          MfaGateFilter mfaGateFilter, MfaAuthenticationSuccessHandler mfaAuthenticationSuccessHandler) {
         this.rateLimitFilter = rateLimitFilter;
         this.sessionAuthorizationRefreshFilter = sessionAuthorizationRefreshFilter;
+        this.mfaGateFilter = mfaGateFilter;
+        this.mfaAuthenticationSuccessHandler = mfaAuthenticationSuccessHandler;
     }
 
     @Bean
@@ -36,14 +41,23 @@ public class SecurityConfig {
     }
 
     @Bean
+    FilterRegistrationBean<MfaGateFilter> disableMfaGateContainerRegistration(MfaGateFilter filter) {
+        FilterRegistrationBean<MfaGateFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/register", "/verify-email", "/accept-invitation", "/forgot-password", "/reset-password", "/error", "/css/**", "/images/**").permitAll()
                         .anyRequest().authenticated())
-                .formLogin(form -> form.loginPage("/login").usernameParameter("email").defaultSuccessUrl("/", true).permitAll())
+                .formLogin(form -> form.loginPage("/login").usernameParameter("email")
+                        .successHandler(mfaAuthenticationSuccessHandler).permitAll())
                 .logout(logout -> logout.logoutSuccessUrl("/login?logout").invalidateHttpSession(true).deleteCookies("JSESSIONID"))
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(sessionAuthorizationRefreshFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterAfter(sessionAuthorizationRefreshFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(mfaGateFilter, SessionAuthorizationRefreshFilter.class);
         return http.build();
     }
 

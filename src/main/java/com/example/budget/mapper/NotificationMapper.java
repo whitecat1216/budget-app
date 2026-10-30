@@ -7,16 +7,20 @@ import java.util.Map;
 
 @Mapper
 public interface NotificationMapper {
-    @Insert("INSERT INTO notifications (tenant_id, recipient_id, type, title, message, target_url) " +
+    @Insert("<script>INSERT INTO notifications (tenant_id, recipient_id, type, title, message, target_url) " +
             "SELECT u.tenant_id, u.id, #{type}, #{title}, #{message}, #{targetUrl} FROM users u " +
-            "WHERE u.tenant_id = #{tenantId} AND u.enabled = TRUE AND u.id <> #{excludeUserId} " +
-            "AND (u.role IN ('TENANT_ADMIN','FINANCE_ADMIN','APPROVER') OR " +
-            "(u.role = 'DEPARTMENT_MANAGER' AND EXISTS (SELECT 1 FROM user_scopes s WHERE s.tenant_id=u.tenant_id " +
-            "AND s.user_id=u.id AND s.scope_type='DEPARTMENT' AND s.scope_id=#{departmentId})) OR " +
-            "(u.role = 'PROJECT_MANAGER' AND EXISTS (SELECT 1 FROM user_scopes s WHERE s.tenant_id=u.tenant_id " +
-            "AND s.user_id=u.id AND s.scope_type='PROJECT' AND s.scope_id=#{projectId})))")
+            "WHERE u.tenant_id = #{tenantId} AND u.enabled = TRUE AND u.id != #{excludeUserId} " +
+            "AND ((#{requiredRole}='ANY_APPROVER' AND u.role IN ('TENANT_ADMIN','FINANCE_ADMIN','APPROVER')) " +
+            "OR (#{requiredRole} IN ('TENANT_ADMIN','FINANCE_ADMIN','APPROVER') AND u.role=#{requiredRole}) " +
+            "OR (#{requiredRole} IN ('ANY_APPROVER','DEPARTMENT_MANAGER') AND u.role='DEPARTMENT_MANAGER' " +
+            "AND EXISTS (SELECT 1 FROM user_scopes s WHERE s.tenant_id=u.tenant_id AND s.user_id=u.id " +
+            "AND s.scope_type='DEPARTMENT' AND s.scope_id=#{departmentId})) " +
+            "OR (#{requiredRole} IN ('ANY_APPROVER','PROJECT_MANAGER') AND u.role='PROJECT_MANAGER' " +
+            "AND EXISTS (SELECT 1 FROM user_scopes s WHERE s.tenant_id=u.tenant_id AND s.user_id=u.id " +
+            "AND s.scope_type='PROJECT' AND s.scope_id=#{projectId})))</script>")
     int insertForReviewers(@Param("tenantId") long tenantId, @Param("excludeUserId") long excludeUserId,
                            @Param("departmentId") Long departmentId, @Param("projectId") Long projectId,
+                           @Param("requiredRole") String requiredRole,
                            @Param("type") String type, @Param("title") String title,
                            @Param("message") String message, @Param("targetUrl") String targetUrl);
 

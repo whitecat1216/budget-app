@@ -1,4 +1,14 @@
-DO $$ BEGIN
+DO $$
+DECLARE tenant_table TEXT;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_request_approvals_tenant_request') THEN
+        ALTER TABLE spending_request_approvals ADD CONSTRAINT fk_request_approvals_tenant_request
+            FOREIGN KEY (tenant_id, request_id) REFERENCES spending_requests (tenant_id, id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_request_approvals_tenant_reviewer') THEN
+        ALTER TABLE spending_request_approvals ADD CONSTRAINT fk_request_approvals_tenant_reviewer
+            FOREIGN KEY (tenant_id, reviewer_id) REFERENCES users (tenant_id, id);
+    END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_notifications_tenant_recipient') THEN
         ALTER TABLE notifications ADD CONSTRAINT fk_notifications_tenant_recipient
             FOREIGN KEY (tenant_id, recipient_id) REFERENCES users (tenant_id, id) ON DELETE CASCADE;
@@ -107,4 +117,20 @@ DO $$ BEGIN
         ALTER TABLE budgets ADD CONSTRAINT fk_budgets_tenant_project
             FOREIGN KEY (tenant_id, project_id) REFERENCES projects (tenant_id, id);
     END IF;
+
+    FOREACH tenant_table IN ARRAY ARRAY[
+        'tenants','departments','projects','users','user_scopes','spending_requests','approval_policies',
+        'spending_request_approvals','approval_history','audit_logs','notifications','budget_change_requests',
+        'accounting_connections','accounting_sync_runs','external_actuals','categories','account_codes','transactions','budgets'
+    ] LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tenant_table);
+        EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', tenant_table);
+        IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = current_schema()
+                       AND tablename = tenant_table AND policyname = 'tenant_isolation') THEN
+            EXECUTE format('CREATE POLICY tenant_isolation ON %I USING ' ||
+                '(current_setting(''app.rls_bypass'', true) = ''on'' OR tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')::BIGINT) ' ||
+                'WITH CHECK (current_setting(''app.rls_bypass'', true) = ''on'' OR tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')::BIGINT)',
+                tenant_table);
+        END IF;
+    END LOOP;
 END $$;
